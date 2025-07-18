@@ -1,0 +1,123 @@
+/* Base styles and font setup */
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background: #fafbfc; /* very light gray */
+  color: #111;
+  font-family: 'Inter', Helvetica, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Main container centers content vertically and horizontally */
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  width: 100vw;
+  padding: 24px;
+  animation: fadeIn 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Name styling */
+.name {
+  font-size: 2.8rem;
+  font-weight: 700;
+  margin: 0 0 0.5em 0;
+  letter-spacing: -1px;
+  text-align: center;
+}
+
+/* Majors styling */
+.majors {
+  font-size: 1.2rem;
+  font-weight: 400;
+  margin: 0 0 2em 0;
+  color: #333;
+  text-align: center;
+}
+
+/* Social links container */
+.social-links {
+  display: flex;
+  gap: 2.2rem;
+  margin-top: 0.5em;
+}
+
+/* Icon link styles */
+.icon-link {
+  color: #111;
+  text-decoration: none;
+  transition: color 0.2s, border-bottom 0.2s;
+  border-bottom: 2px solid transparent;
+  display: flex;
+  align-items: center;
+}
+
+/* SVG icon sizing */
+.icon-link svg {
+  display: block;
+  width: 28px;
+  height: 28px;
+}
+
+/* Hover effect for links */
+.icon-link:hover,
+.icon-link:focus {
+  color: #555;
+  border-bottom: 2px solid #bbb;
+  outline: none;
+  transform: translateY(-2px) scale(1.07);
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.03);
+}
+
+/* Fade-in animation for main content */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 600px) {
+  .name {
+    font-size: 2rem;
+  }
+  .majors {
+    font-size: 1rem;
+  }
+  .social-links {
+    gap: 1.2rem;
+  }
+} 
+
+/* Code showcase section styles */
+.code-showcase {
+  margin-top: 2.5em;
+  max-width: 420px;
+  width: 100%;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  padding: 1.2em 1em;
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.03);
+}
+.code-showcase pre {
+  margin: 0;
+  font-family: 'Fira Mono', 'Consolas', 'Menlo', monospace;
+  font-size: 1rem;
+  color: #111;
+  background: none;
+  overflow-x: auto;
+}
+.code-showcase code {
+  background: none;
+  color: #111;
+  font-size: 1rem;
+  line-height: 1.6;
+  display: block;
+  white-space: pre;
+} 
