@@ -337,11 +337,32 @@ html, body, .hero {
 .theme-toggle .theme-icon {
   width: 24px;
   height: 24px;
-  margin: 0 auto;
   display: block;
-  transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
+  margin: 0 auto;
+  position: static;
+  transition: opacity 0.5s cubic-bezier(.4,0,.2,1), transform 0.5s cubic-bezier(.4,0,.2,1);
   opacity: 1;
   pointer-events: none;
+}
+.theme-toggle .theme-icon.sun {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  z-index: 2;
+}
+.theme-toggle .theme-icon.moon {
+  opacity: 0;
+  transform: scale(0.6) rotate(-90deg);
+  z-index: 1;
+}
+html[data-theme="dark"] .theme-toggle .theme-icon.sun {
+  opacity: 0;
+  transform: scale(0.6) rotate(90deg);
+  z-index: 1;
+}
+html[data-theme="dark"] .theme-toggle .theme-icon.moon {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+  z-index: 2;
 }
 
 /* Social icon styles: larger size */
@@ -429,14 +450,12 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   transition: none !important;
 } 
 
-.theme-toggle .theme-icon {
-  position: static !important;
-  transform: none !important;
-  margin: 0 auto !important;
-} 
-
 .theme-toggle {
   min-width: 40px;
   min-height: 40px;
   padding: 4px 8px;
+} 
+
+.social-link {
+  transition: none;
 } 
