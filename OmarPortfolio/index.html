@@ -1,34 +1,33 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme>
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Omar Ozalp Portfolio</title>
-  <!-- Use Inter font from Google Fonts as primary, fallback to Helvetica, Arial, sans-serif -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Omar Ozalp</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <main class="container">
-    <!-- Full Name -->
-    <h1 class="name">Omar Ozalp</h1>
-    <!-- Majors -->
-    <p class="majors">Electrical and Computer Engineering, Computer Science</p>
-    <!-- Social Links -->
-    <nav class="social-links" aria-label="Social links">
-      <a href="https://github.com/omarozalp" class="icon-link" target="_blank" rel="noopener" aria-label="GitHub">
-        <!-- GitHub SVG Icon -->
+  <a class="skip-link" href="#main">Skip to content</a>
+  <!-- Theme toggle (conditionally shown by JS if enabled) -->
+  <button id="theme-toggle" class="theme-toggle" aria-pressed="false" hidden>theme</button>
+  <main id="main" class="hero" tabindex="-1">
+    <span id="greeting" aria-live="polite"></span>
+    <h1 class="hero-name">Omar Ozalp</h1>
+    <p class="majors">Electrical &amp; Computer Engineering, Computer Science</p>
+    <nav class="socials" aria-label="Social links">
+      <a href="https://github.com/omarozalp" class="social-link" target="_blank" rel="noopener" aria-label="GitHub profile">
         <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2C6.48 2 2 6.58 2 12.26c0 4.5 2.87 8.32 6.84 9.67.5.09.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.36-3.37-1.36-.45-1.18-1.1-1.5-1.1-1.5-.9-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.07 0-1.12.38-2.03 1.01-2.75-.1-.26-.44-1.3.1-2.7 0 0 .83-.27 2.75 1.02A9.36 9.36 0 0 1 12 6.84c.84.004 1.68.11 2.47.32 1.92-1.29 2.75-1.02 2.75-1.02.54 1.4.2 2.44.1 2.7.63.72 1.01 1.63 1.01 2.75 0 3.94-2.34 4.81-4.57 5.07.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.58.69.48A10.01 10.01 0 0 0 22 12.26C22 6.58 17.52 2 12 2Z"/></svg>
       </a>
-      <a href="https://www.linkedin.com/in/omar-ozalp" class="icon-link" target="_blank" rel="noopener" aria-label="LinkedIn">
-        <!-- LinkedIn SVG Icon -->
+      <a href="https://www.linkedin.com/in/omar-ozalp" class="social-link" target="_blank" rel="noopener" aria-label="LinkedIn profile">
         <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M7 10v7M7 7v.01M12 10v7m0-7c0-1.1.9-2 2-2s2 .9 2 2v7"/></svg>
       </a>
-      <a href="mailto:omar_ozalp@duke.edu" class="icon-link" target="_blank" rel="noopener" aria-label="Email">
-        <!-- Email SVG Icon -->
+      <a href="mailto:omar_ozalp@duke.edu" class="social-link" aria-label="Email Omar">
         <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
       </a>
     </nav>
+    <!-- Binary minute bits (conditionally rendered by JS if enabled) -->
+    <div id="minute-bits-root"></div>
   </main>
+  <script src="script.js" defer></script>
 </body>
 </html> 

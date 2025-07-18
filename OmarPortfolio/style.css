@@ -1,0 +1,442 @@
+/* style.css */
+:root {
+  --bg: #fff;
+  --fg: #000;
+  --muted: #555;
+  --line: rgba(0,0,0,.18);
+  --accent: #111;
+  --gradient-light: linear-gradient(90deg,#222 0%,#666 100%);
+  --gradient-dark: linear-gradient(90deg,#eee 0%,#777 100%);
+  --focus: #000;
+  --transition: 0.15s cubic-bezier(.4,0,.2,1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000;
+    --fg: #fff;
+    --muted: #aaa;
+    --line: rgba(255,255,255,.20);
+    --accent: #fff;
+    --focus: #fff;
+  }
+}
+html[data-theme="dark"] {
+  --bg: #000;
+  --fg: #fff;
+  --muted: #aaa;
+  --line: rgba(255,255,255,.20);
+  --accent: #fff;
+  --focus: #fff;
+}
+html[data-theme="light"] {
+  --bg: #fff;
+  --fg: #000;
+  --muted: #555;
+  --line: rgba(0,0,0,.18);
+  --accent: #111;
+  --focus: #000;
+}
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+  font-size: 100%;
+  min-height: 100vh;
+  box-sizing: border-box;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+body {
+  min-height: 100vh;
+  position: relative;
+  z-index: 0;
+}
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  background: var(--bg);
+  color: var(--fg);
+  padding: 4px 12px;
+  border-radius: 4px;
+  z-index: 100;
+  text-decoration: none;
+  font-size: 1rem;
+  border: 2px solid var(--focus);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.skip-link:focus {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* Improved sun/moon icon animation for theme toggle */
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 101;
+  background: var(--bg);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 1rem;
+  padding: 6px 10px;
+  cursor: pointer;
+  outline: none;
+  min-width: 48px;
+  min-height: 48px;
+  box-shadow: 0 1px 4px 0 rgba(0,0,0,0.02);
+  text-align: center;
+  transition: none;
+}
+.theme-toggle .theme-icon {
+  width: 36px;
+  height: 36px;
+  display: block;
+  transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
+  opacity: 1;
+  pointer-events: none;
+  margin: 0;
+  position: static;
+}
+.theme-toggle .theme-icon.sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  z-index: 2;
+}
+.theme-toggle .theme-icon.moon {
+  opacity: 0;
+  transform: rotate(-90deg) scale(0.7);
+  z-index: 1;
+}
+html[data-theme="dark"] .theme-toggle .theme-icon.sun {
+  opacity: 0;
+  transform: rotate(90deg) scale(0.7);
+  z-index: 1;
+}
+html[data-theme="dark"] .theme-toggle .theme-icon.moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  z-index: 2;
+}
+/* Remove theme-label if present */
+.theme-toggle .theme-label { display: none !important; }
+.theme-toggle[hidden] { display: none; }
+.hero {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+  padding: 0 1rem;
+  position: relative;
+  z-index: 1;
+}
+#greeting {
+  display: block;
+  min-height: 1.2em;
+  margin-bottom: 1.1em;
+  font-size: clamp(1.1rem, 2.5vw, 2.1rem);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+  position: relative;
+  z-index: 2;
+}
+#greeting.ready {
+  opacity: 1;
+  pointer-events: auto;
+  cursor: default;
+}
+/* Remove sun/moon glyph from greeting */
+#greeting .moon-sun { display: none !important; }
+
+/* Fix gradient for greeting in dark mode */
+#greeting.gradient {
+  background: linear-gradient(90deg, #222 0%, #666 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+html[data-theme="dark"] #greeting.gradient {
+  background: linear-gradient(90deg, #fff 0%, #bbb 100%);
+}
+
+#greeting .time-tag {
+  font-size: 0.7em;
+  color: var(--muted);
+  margin-left: 0.5em;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+}
+#greeting .accent-rule {
+  display: block;
+  margin: 0.5em auto 0 auto;
+  width: 42px;
+  height: 1.5px;
+  background: var(--line);
+  border-radius: 1px;
+  opacity: 0.9;
+}
+.hero-name {
+  font-size: clamp(2.8rem, 7vw, 4.2rem);
+  font-weight: 700;
+  margin: 0 0 0.5em 0;
+  letter-spacing: -0.02em;
+  text-align: center;
+  line-height: 1.15;
+}
+.majors {
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  color: var(--muted);
+  margin: 0 0 2.2em 0;
+  text-align: center;
+  line-height: 1.25;
+  transition: line-height 0.2s, font-size 0.2s;
+  margin-bottom: 1.2em;
+}
+.socials {
+  display: flex;
+  gap: 2.4rem;
+  margin-top: 1.2em;
+  justify-content: center;
+}
+.social-link {
+  color: var(--fg);
+  text-decoration: none;
+  position: relative;
+  font-size: 1.1rem;
+  padding: 2px 0;
+  transition: color var(--transition);
+  outline: none;
+}
+.social-link:focus {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.social-link::after {
+  content: "";
+  display: block;
+  height: 1.5px;
+  width: 100%;
+  background: var(--line);
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform 0.15s ease, opacity 0.15s;
+  opacity: 0.7;
+}
+.social-link:hover::after,
+.social-link:focus::after {
+  transform: scaleX(1);
+  opacity: 1;
+}
+.minute-bits {
+  display: flex;
+  justify-content: center;
+  gap: 0.3em;
+  margin: 0.7em 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+.minute-bits li {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--line);
+  opacity: 0.7;
+  transition: background 0.2s;
+}
+.minute-bits li.on {
+  background: var(--accent);
+  opacity: 1;
+}
+@media (max-width: 420px) {
+  .hero {
+    line-height: 1.15;
+  }
+  .hero-name {
+    font-size: clamp(2.2rem, 9vw, 3.2rem);
+    line-height: 1.10;
+  }
+  .majors {
+    font-size: clamp(0.98rem, 2vw, 1.1rem);
+    line-height: 1.10;
+    white-space: normal;
+    display: block;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  #greeting.entrance {
+    animation: fadeInUp 0.7s cubic-bezier(.16,.84,.44,1) 0.1s both;
+  }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(4px);}
+  to   { opacity: 1; transform: none;}
+}
+body.radial-bg::before {
+  content: "";
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 60% 20%,rgba(0,0,0,0.04) 0%,transparent 70%);
+  opacity: 1;
+}
+html[data-theme="dark"] body.radial-bg::before {
+  background: radial-gradient(ellipse at 40% 30%,rgba(255,255,255,0.06) 0%,transparent 70%);
+  opacity: 1;
+}
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.sr-only {
+  position: absolute !important;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0);
+  border: 0;
+} 
+
+/* Fix greeting and time display in dark mode */
+#greeting, #greeting .time-tag {
+  color: var(--fg);
+  text-shadow: 0 1px 2px rgba(0,0,0,0.10);
+}
+html[data-theme="dark"] #greeting .time-tag {
+  color: #eee;
+}
+
+/* Improve theme transition animation */
+html, body, .hero {
+  transition: none !important;
+} 
+
+/* Theme toggle icon: smaller, centered */
+.theme-toggle .theme-icon {
+  width: 24px;
+  height: 24px;
+  margin: 0 auto;
+  display: block;
+  transition: opacity 0.45s cubic-bezier(.4,0,.2,1), transform 0.45s cubic-bezier(.4,0,.2,1);
+  opacity: 1;
+  pointer-events: none;
+}
+
+/* Social icon styles: larger size */
+.social-link svg {
+  width: 36px;
+  height: 36px;
+  display: block;
+  stroke: currentColor;
+  fill: none;
+  transition: stroke 0.2s, color 0.2s;
+}
+.social-link {
+  color: var(--fg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 6px;
+  transition: color 0.2s, background 0.2s;
+  position: relative;
+}
+/* Underline animation directly under icon */
+.social-link::after {
+  content: "";
+  display: block;
+  width: 60%;
+  height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+  position: absolute;
+  left: 20%;
+  bottom: 4px;
+  transform: scaleX(0);
+  transform-origin: 50% 50%;
+  transition: transform 0.18s cubic-bezier(.4,0,.2,1), opacity 0.18s;
+  opacity: 0.7;
+  pointer-events: none;
+}
+.social-link:hover::after,
+.social-link:focus::after {
+  transform: scaleX(1);
+  opacity: 1;
+}
+
+/* Fix greeting and time tag in dark mode: solid white, no gradient */
+html[data-theme="dark"] #greeting.gradient {
+  background: none !important;
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+}
+html[data-theme="dark"] #greeting .time-tag {
+  color: #fff !important;
+}
+
+/* Only animate sun/moon icons in theme toggle, not the name */
+.hero-name {
+  transition: none !important;
+}
+
+.theme-toggle .theme-icon {
+  transition: opacity 0.35s cubic-bezier(.4,0,.2,1), transform 0.35s cubic-bezier(.4,0,.2,1);
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  will-change: opacity, transform;
+}
+.theme-toggle .theme-icon.sun {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+.theme-toggle .theme-icon.moon {
+  opacity: 0;
+  transform: rotate(-60deg) scale(0.7);
+}
+html[data-theme="dark"] .theme-toggle .theme-icon.sun {
+  opacity: 0;
+  transform: rotate(60deg) scale(0.7);
+}
+html[data-theme="dark"] .theme-toggle .theme-icon.moon {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+} 
+
+/* Remove all transitions from the theme toggle button itself */
+.theme-toggle {
+  transition: none !important;
+} 
+
+.theme-toggle .theme-icon {
+  position: static !important;
+  transform: none !important;
+  margin: 0 auto !important;
+} 
+
+.theme-toggle {
+  min-width: 40px;
+  min-height: 40px;
+  padding: 4px 8px;
+} 
