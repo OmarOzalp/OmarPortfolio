@@ -202,4 +202,17 @@ document.addEventListener("DOMContentLoaded", function () {
     const greeting = document.getElementById("greeting");
     if (greeting) greeting.removeAttribute("aria-live");
   }, 1200);
+  
+  // Underline animation initialization
+  // To change variants, add data attributes to the h1:
+  // data-underline-variant="center" | "default"
+  // data-underline-fade-tail="true" | "false" 
+  // data-underline-pulse="true" | "false"
+  const nameElement = document.getElementById('site-name');
+  if (nameElement) {
+    // Small delay to ensure smooth animation
+    setTimeout(() => {
+      nameElement.classList.add('animate-underline');
+    }, 100);
+  }
 }); 

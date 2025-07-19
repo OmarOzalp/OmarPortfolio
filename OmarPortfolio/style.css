@@ -459,3 +459,61 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
 .social-link {
   transition: none;
 } 
+
+/* Underline animation styles */
+.name {
+  position: relative;
+  display: inline-block;
+}
+
+.name::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -0.55rem;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: none;
+}
+
+/* Default variant: left-to-right wipe */
+.name.animate-underline::after {
+  animation: underlineWipe 0.9s cubic-bezier(.65,.05,.36,1) 0.4s forwards;
+}
+
+/* Center variant: center-out expansion */
+.name[data-underline-variant="center"]::after {
+  transform-origin: center center;
+}
+
+/* Fade tail variant: gradient background */
+.name[data-underline-fade-tail="true"]::after {
+  background: linear-gradient(90deg, currentColor 0%, currentColor 85%, transparent 100%);
+}
+
+/* Pulse variant: thickness animation after wipe */
+.name[data-underline-pulse="true"].animate-underline::after {
+  animation: underlineWipe 0.9s cubic-bezier(.65,.05,.36,1) 0.4s forwards,
+             underlinePulse 1.2s ease-in-out 1.3s forwards;
+}
+
+/* Reduced motion: instant underline */
+@media (prefers-reduced-motion: reduce) {
+  .name.animate-underline::after {
+    animation: none;
+    transform: scaleX(1);
+  }
+}
+
+@keyframes underlineWipe {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+@keyframes underlinePulse {
+  0%, 100% { height: 1px; }
+  40%      { height: 2px; }
+} 
