@@ -383,9 +383,14 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   justify-content: center;
   padding: 8px;
   border-radius: 6px;
-  transition: color 0.2s, background 0.2s;
+  transition: color 0.2s, background 0.2s, transform 0.18s cubic-bezier(.4,0,.2,1);
   position: relative;
 }
+.social-link:hover, .social-link:focus {
+  color: var(--muted);
+  transform: translateY(-2px) scale(1.08);
+}
+
 /* Underline animation directly under icon */
 .social-link::after {
   content: "";
