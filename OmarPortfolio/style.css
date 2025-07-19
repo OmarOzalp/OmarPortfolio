@@ -185,10 +185,12 @@ html[data-theme="dark"] #greeting.gradient {
 #greeting .time-tag {
   font-size: 0.7em;
   color: var(--muted);
-  margin-left: 0.5em;
+  margin-left: 1.2em;
   font-weight: 400;
   letter-spacing: 0.01em;
+  white-space: nowrap;
 }
+/* Add a non-breaking space before the dot in the JS if needed for perfect spacing */
 #greeting .accent-rule {
   display: block;
   margin: 0.5em auto 0 auto;
@@ -516,4 +518,25 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
 @keyframes underlinePulse {
   0%, 100% { height: 1px; }
   40%      { height: 2px; }
+} 
+
+#greeting.greeting-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.8em;
+}
+.greeting-dot {
+  font-size: 1.1em;
+  color: var(--muted);
+  margin: 0 0.8em;
+  user-select: none;
+}
+#greeting .time-tag {
+  font-size: 0.7em;
+  color: var(--muted);
+  margin: 0;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
 } 

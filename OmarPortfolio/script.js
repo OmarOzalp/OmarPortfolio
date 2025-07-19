@@ -202,17 +202,99 @@ document.addEventListener("DOMContentLoaded", function () {
     const greeting = document.getElementById("greeting");
     if (greeting) greeting.removeAttribute("aria-live");
   }, 1200);
-  
-  // Underline animation initialization
-  // To change variants, add data attributes to the h1:
-  // data-underline-variant="center" | "default"
-  // data-underline-fade-tail="true" | "false" 
-  // data-underline-pulse="true" | "false"
-  const nameElement = document.getElementById('site-name');
-  if (nameElement) {
-    // Small delay to ensure smooth animation
-    setTimeout(() => {
-      nameElement.classList.add('animate-underline');
-    }, 100);
+});
+
+// --- Text Scramble Intro Effect for #site-name ---
+const SCRAMBLE_CONFIG = {
+  enabled: true,
+  durationMs: 1100, // slowed down
+  delayMs: 80,
+  frameIntervalMs: 40, // slightly faster
+  randomOrder: false, // left-to-right
+  charset: ['0','1','▮'],
+  skipIfSeen: false, // set to false for testing so it always runs
+  reduceMotionInstant: true
+};
+(function(){
+  const el = document.getElementById('site-name');
+  if (!el || !SCRAMBLE_CONFIG.enabled) return;
+  if (SCRAMBLE_CONFIG.skipIfSeen && sessionStorage.getItem('seenScramble') === '1') {
+    el.classList.add('animate-underline');
+    return;
   }
-}); 
+  if (SCRAMBLE_CONFIG.reduceMotionInstant && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    el.textContent = el.dataset.scrambleOrig || el.textContent;
+    el.classList.remove('scrambling');
+    el.classList.add('animate-underline');
+    sessionStorage.setItem('seenScramble','1');
+    return;
+  }
+  let running = false;
+  window.runScrambleOnce = function() {
+    if (running) return;
+    running = true;
+    const orig = el.dataset.scrambleOrig || el.textContent;
+    el.dataset.scrambleOrig = orig;
+    const chars = SCRAMBLE_CONFIG.charset;
+    const len = orig.length;
+    const revealOrder = [];
+    for (let i=0; i<len; ++i) revealOrder.push(i);
+    if (SCRAMBLE_CONFIG.randomOrder) {
+      for (let i = revealOrder.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [revealOrder[i], revealOrder[j]] = [revealOrder[j], revealOrder[i]];
+      }
+    }
+    let revealed = Array(len).fill(false);
+    let frame = 0, done = false;
+    const totalFrames = Math.ceil(SCRAMBLE_CONFIG.durationMs / (1000/60));
+    el.classList.add('scrambling');
+    // Early exit: on key/click, finish immediately
+    const finish = () => {
+      if (done) return;
+      done = true;
+      el.textContent = orig;
+      el.classList.remove('scrambling');
+      el.classList.add('animate-underline');
+      sessionStorage.setItem('seenScramble','1');
+      window.removeEventListener('keydown', finish, true);
+      window.removeEventListener('mousedown', finish, true);
+    };
+    window.addEventListener('keydown', finish, true);
+    window.addEventListener('mousedown', finish, true);
+    let lastUpdate = performance.now();
+    function animate(now) {
+      if (done) return;
+      const progress = Math.min(1, frame / totalFrames);
+      let revealCount = Math.floor(progress * len);
+      if (SCRAMBLE_CONFIG.randomOrder) {
+        for (let i=0; i<revealCount; ++i) revealed[revealOrder[i]] = true;
+      } else {
+        for (let i=0; i<revealCount; ++i) revealed[i] = true;
+      }
+      if (!animate.lastTextUpdate || now - animate.lastTextUpdate >= SCRAMBLE_CONFIG.frameIntervalMs) {
+        let out = '';
+        for (let i=0; i<len; ++i) {
+          const c = orig[i];
+          if (c === ' ' || /[^A-Za-z0-9]/.test(c)) { out += c; continue; }
+          out += revealed[i] ? c : chars[Math.floor(Math.random()*chars.length)];
+        }
+        el.textContent = out;
+        animate.lastTextUpdate = now;
+      }
+      if (progress < 1) {
+        frame++;
+        requestAnimationFrame(animate);
+      } else {
+        finish();
+      }
+    }
+    requestAnimationFrame(animate);
+  };
+  document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(window.runScrambleOnce, SCRAMBLE_CONFIG.delayMs);
+  });
+})();
+// To use hex: SCRAMBLE_CONFIG.charset = '0123456789ABCDEF'.split('');
+// To enable random order: SCRAMBLE_CONFIG.randomOrder = true;
+// To add aria-live: // el.setAttribute('aria-live','polite'); 
