@@ -141,10 +141,22 @@ function setupClock() {
 
 // --- Dock ---
 function setupDock() {
-  document.querySelector('[aria-label="About"]')
-    .addEventListener('click', function() { WindowManager.open('about'); });
-  document.querySelector('[aria-label="Experience"]')
-    .addEventListener('click', function() { WindowManager.open('experience'); });
+  var items = { 'About': 'about', 'Experience': 'experience' };
+  Object.keys(items).forEach(function(label) {
+    var el = document.querySelector('#dock [aria-label="' + label + '"]');
+    if (!el) return;
+    function activate() {
+      if (currentState !== 'desktop') return;
+      WindowManager.open(items[label]);
+    }
+    el.addEventListener('click', activate);
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        activate();
+      }
+    });
+  });
 }
 
 // --- Init ---
