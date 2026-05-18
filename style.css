@@ -550,4 +550,78 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   font-weight: 400;
   letter-spacing: 0.01em;
   white-space: nowrap;
-} 
+}
+
+/* === Window Card Component === */
+.window-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.window-title-bar {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  gap: 0.6rem;
+}
+
+.window-dots {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.window-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+}
+
+.window-label {
+  font-family: 'SF Mono', ui-monospace, 'Fira Mono', 'Consolas', monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+  letter-spacing: 0.03em;
+  flex: 1;
+  text-align: center;
+  padding-right: 1.5rem;
+}
+
+.window-body {
+  padding: 1.25rem 1.5rem;
+}
+
+.window-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 0.25rem;
+}
+
+.window-role,
+.window-location {
+  font-family: 'SF Mono', ui-monospace, 'Fira Mono', 'Consolas', monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+
+.window-company {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.5rem 0;
+  color: var(--fg);
+  letter-spacing: -0.01em;
+}
+
+.window-description {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.6;
+}
