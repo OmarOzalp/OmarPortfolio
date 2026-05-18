@@ -136,7 +136,6 @@ html, body {
 
 /* === Desktop === */
 #desktop {
-  position: relative;
   background: var(--bg);
   display: flex;
   flex-direction: column;
