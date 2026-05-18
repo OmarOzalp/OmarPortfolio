@@ -22,6 +22,10 @@ html, body {
   transition: opacity 0.4s ease;
 }
 
+#boot    { z-index: 100; }
+#login   { z-index: 101; }
+#desktop { z-index: 102; }
+
 #boot.active,
 #login.active,
 #desktop.active {
@@ -65,7 +69,7 @@ html, body {
   height: 100%;
   width: 0%;
   background: var(--fg);
-  border-radius: 1px;
+  border-radius: 2px;
   transition: width 3s linear;
 }
 
@@ -220,6 +224,7 @@ html, body {
   align-items: center;
   cursor: default;
   position: relative;
+  z-index: 1;
   padding: 4px 6px 0 6px;
 }
 
