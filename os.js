@@ -26,7 +26,7 @@ const SCRAMBLE_CHARSET = ['0', '1', '▮'];
 function scrambleText(el, original, durationMs) {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
     el.textContent = original;
-    return;
+    return function cancel() {};
   }
   const len = original.length;
   const revealed = Array(len).fill(false);
@@ -59,6 +59,7 @@ function scrambleText(el, original, durationMs) {
   }
 
   requestAnimationFrame(animate);
+  return function cancel() { done = true; };
 }
 
 // --- Boot Sequence ---
@@ -81,6 +82,7 @@ function runBootSequence() {
   function advance() {
     if (skipped) return;
     skipped = true;
+    cancelScramble();
     window.removeEventListener('click', advance);
     window.removeEventListener('keydown', advance);
     clearTimeout(advanceTimer);
@@ -92,7 +94,7 @@ function runBootSequence() {
   window.addEventListener('keydown', advance);
 
   // Scramble the title text
-  scrambleText(titleEl, 'OzalpOS', 900);
+  const cancelScramble = scrambleText(titleEl, 'OzalpOS', 900);
 
   // Trigger progress bar fill (must happen after paint)
   setTimeout(function() {
@@ -100,7 +102,7 @@ function runBootSequence() {
   }, 50);
 
   // Cycle status messages evenly across the boot duration
-  var msgInterval = BOOT_DURATION_MS / BOOT_STATUS_MESSAGES.length;
+  const msgInterval = BOOT_DURATION_MS / BOOT_STATUS_MESSAGES.length;
   BOOT_STATUS_MESSAGES.forEach(function(msg, i) {
     statusTimers.push(setTimeout(function() {
       if (!skipped) statusEl.textContent = msg;
@@ -114,6 +116,7 @@ function runBootSequence() {
 // --- Login ---
 function setupLogin() {
   document.getElementById('login').addEventListener('click', function() {
+    if (currentState !== 'login') return;
     setState('desktop');
   });
 }
