@@ -139,10 +139,19 @@ function setupClock() {
   });
 }
 
+// --- Dock ---
+function setupDock() {
+  document.querySelector('[aria-label="About"]')
+    .addEventListener('click', function() { WindowManager.open('about'); });
+  document.querySelector('[aria-label="Experience"]')
+    .addEventListener('click', function() { WindowManager.open('experience'); });
+}
+
 // --- Init ---
 document.addEventListener('DOMContentLoaded', function() {
   setState('boot');
   runBootSequence();
   setupLogin();
   setupClock();
+  setupDock();
 });
