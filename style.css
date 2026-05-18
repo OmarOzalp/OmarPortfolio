@@ -143,7 +143,7 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   align-items: center;
   justify-content: center;
   line-height: 1.25;
-  padding: 0 1rem;
+  padding: 0 1rem calc(36px + 0.5rem) 1rem;
   position: relative;
   z-index: 1;
 }
@@ -589,7 +589,7 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   letter-spacing: 0.03em;
   flex: 1;
   text-align: center;
-  padding-right: 1.5rem;
+  padding-right: 2.75rem;
 }
 
 .window-body {
@@ -662,9 +662,9 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   left: 0;
   right: 0;
   height: 36px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  justify-content: space-between;
   padding: 0 1rem;
   background: var(--bg);
   border-top: 1px solid var(--line);
@@ -682,14 +682,13 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   font-size: 0.7rem;
   color: var(--muted);
   letter-spacing: 0.04em;
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+  text-align: center;
 }
 
 .status-bar-right {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 /* Override theme toggle positioning when inside status bar */
