@@ -198,7 +198,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (el) el.textContent = getTimeTag();
   }
   updateStatusTime();
-  setInterval(updateStatusTime, 60000);
+  const statusTimeInterval = setInterval(updateStatusTime, 60000);
+  window.addEventListener('beforeunload', () => clearInterval(statusTimeInterval));
   if (CONFIG.radialBackground) {
     const hour = getHour();
     const bucket = getBucket(hour);
