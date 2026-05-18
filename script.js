@@ -193,6 +193,12 @@ document.addEventListener("DOMContentLoaded", function () {
   applyGreeting({ initial: true });
   renderMinuteBits();
   setupThemeToggle();
+  function updateStatusTime() {
+    const el = document.getElementById('status-time');
+    if (el) el.textContent = getTimeTag();
+  }
+  updateStatusTime();
+  setInterval(updateStatusTime, 60000);
   if (CONFIG.radialBackground) {
     const hour = getHour();
     const bucket = getBucket(hour);
