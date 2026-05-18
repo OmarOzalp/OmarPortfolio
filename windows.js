@@ -50,6 +50,7 @@ var WindowManager = (function() {
   function focus(windowId) {
     var el = document.getElementById(windowId);
     if (!el) return;
+    if (parseInt(el.style.zIndex, 10) === _counter) return;
     _counter++;
     el.style.zIndex = _counter;
   }
@@ -117,11 +118,11 @@ var WindowManager = (function() {
     var app = APPS[appId];
     if (!app) return;
 
-    _idSeq++;
-    var windowId = 'window-' + _idSeq;
-
     var desktop = document.getElementById('desktop');
     if (!desktop) return;
+
+    _idSeq++;
+    var windowId = 'window-' + _idSeq;
 
     var vw = desktop.offsetWidth;
     var vh = desktop.offsetHeight;
@@ -143,10 +144,12 @@ var WindowManager = (function() {
           '<button class="window-btn minimize" aria-label="Minimize" disabled></button>' +
           '<button class="window-btn maximize" aria-label="Maximize" disabled></button>' +
         '</div>' +
-        '<span class="window-title">' + app.title + '</span>' +
+        '<span class="window-title"></span>' +
       '</div>' +
       '<div class="window-body">' + app.render() + '</div>' +
       '<div class="window-resize-handle" aria-hidden="true"></div>';
+
+    win.querySelector('.window-title').textContent = app.title;
 
     win.addEventListener('mousedown', function() {
       focus(windowId);
