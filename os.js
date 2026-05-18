@@ -84,14 +84,18 @@ function runBootSequence() {
     skipped = true;
     cancelScramble();
     window.removeEventListener('click', advance);
-    window.removeEventListener('keydown', advance);
+    window.removeEventListener('keydown', handleKeydown);
     clearTimeout(advanceTimer);
     statusTimers.forEach(clearTimeout);
     setState('login');
   }
 
   window.addEventListener('click', advance);
-  window.addEventListener('keydown', advance);
+  function handleKeydown(e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.key === 'F12' || e.key === 'Tab' || e.key === 'Shift') return;
+    advance();
+  }
+  window.addEventListener('keydown', handleKeydown);
 
   // Scramble the title text
   const cancelScramble = scrambleText(titleEl, 'OzalpOS', 900);

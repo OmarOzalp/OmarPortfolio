@@ -70,7 +70,7 @@ html, body {
   width: 0%;
   background: var(--fg);
   border-radius: 2px;
-  transition: width 3s linear;
+  transition: width 3.4s linear;
 }
 
 .boot-progress-fill.go {
