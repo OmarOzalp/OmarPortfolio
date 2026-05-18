@@ -705,3 +705,8 @@ html[data-theme="dark"] .theme-toggle .theme-icon.moon {
   width: 28px;
   height: 28px;
 }
+
+.status-bar .theme-toggle .theme-icon {
+  width: 20px;
+  height: 20px;
+}
