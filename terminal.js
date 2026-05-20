@@ -3,8 +3,9 @@
 var Terminal = (function() {
 
   var FS = {
-    '~':          ['projects/', 'downloads/'],
-    '~/projects': ['project_1.txt', 'project_2.txt', 'project_3.txt']
+    '~':           ['projects/', 'downloads/'],
+    '~/projects':  ['project_1.txt', 'project_2.txt', 'project_3.txt'],
+    '~/downloads': []
   };
 
   var LS_LA = {
@@ -22,12 +23,18 @@ var Terminal = (function() {
       '-rw-r--r-- 1 omar omar  512 May 19 10:00 project_1.txt',
       '-rw-r--r-- 1 omar omar  512 May 19 10:00 project_2.txt',
       '-rw-r--r-- 1 omar omar  512 May 19 10:00 project_3.txt'
+    ],
+    '~/downloads': [
+      'total 8',
+      'drwxr-xr-x 2 omar omar 4096 May 19 10:00 .',
+      'drwxr-xr-x 4 omar omar 4096 May 19 10:00 ..'
     ]
   };
 
   var PWD = {
-    '~':          '/home/omar',
-    '~/projects': '/home/omar/projects'
+    '~':           '/home/omar',
+    '~/projects':  '/home/omar/projects',
+    '~/downloads': '/home/omar/downloads'
   };
 
   var HELP_TEXT = [
@@ -44,8 +51,9 @@ var Terminal = (function() {
   ].join('\n');
 
   var PROMPTS = {
-    '~':          'omar@ozalpos:~$',
-    '~/projects': 'omar@ozalpos:~/projects$'
+    '~':           'omar@ozalpos:~$',
+    '~/projects':  'omar@ozalpos:~/projects$',
+    '~/downloads': 'omar@ozalpos:~/downloads$'
   };
 
   function _promptStr(cwd) {
@@ -91,7 +99,10 @@ var Terminal = (function() {
       if (target === 'projects' && cwd === '~') {
         return { output: '', cwd: '~/projects' };
       }
-      if ((target === '..' || target === '../') && cwd === '~/projects') {
+      if (target === 'downloads' && cwd === '~') {
+        return { output: '', cwd: '~/downloads' };
+      }
+      if ((target === '..' || target === '../') && (cwd === '~/projects' || cwd === '~/downloads')) {
         return { output: '', cwd: '~' };
       }
       return { output: 'bash: cd: ' + target + ': No such file or directory', cwd: cwd };
