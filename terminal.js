@@ -43,8 +43,13 @@ var Terminal = (function() {
     '  help         show this help message'
   ].join('\n');
 
+  var PROMPTS = {
+    '~':          'omar@ozalpos:~$',
+    '~/projects': 'omar@ozalpos:~/projects$'
+  };
+
   function _promptStr(cwd) {
-    return cwd === '~' ? 'omar@ozalpos:~$' : 'omar@ozalpos:~/projects$';
+    return PROMPTS[cwd] || 'omar@ozalpos:' + cwd + '$';
   }
 
   function _run(cmd, cwd) {
@@ -68,8 +73,14 @@ var Terminal = (function() {
     }
 
     if (name === 'ls') {
-      if (arg1 === '-la') return { output: LS_LA[cwd].join('\n'), cwd: cwd };
-      return { output: FS[cwd].join('  '), cwd: cwd };
+      if (arg1 === '-la') {
+        var laEntries = LS_LA[cwd];
+        if (!laEntries) return { output: 'ls: cannot open directory: No such file or directory', cwd: cwd };
+        return { output: laEntries.join('\n'), cwd: cwd };
+      }
+      var entries = FS[cwd];
+      if (!entries) return { output: 'ls: cannot open directory: No such file or directory', cwd: cwd };
+      return { output: entries.join('  '), cwd: cwd };
     }
 
     if (name === 'cd') {
@@ -123,7 +134,6 @@ var Terminal = (function() {
           outputEl.textContent = '';
         } else {
           if (result.output) _append(result.output);
-          _append('');
         }
         _updatePrompt();
       } else if (e.key === 'ArrowUp') {
