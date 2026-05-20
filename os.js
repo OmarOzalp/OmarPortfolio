@@ -141,7 +141,7 @@ function setupClock() {
 
 // --- Dock ---
 function setupDock() {
-  var items = { 'About': 'about', 'Experience': 'experience' };
+  var items = { 'About': 'about', 'Experience': 'experience', 'Finder': 'finder', 'Terminal': 'terminal' };
   Object.keys(items).forEach(function(label) {
     var el = document.querySelector('#dock [aria-label="' + label + '"]');
     if (!el) return;
