@@ -110,7 +110,11 @@ var APPS = {
       main.addEventListener('click', function(e) {
         var navEl  = e.target.closest('[data-nav]');
         var fileEl = e.target.closest('[data-file]');
-        if (navEl)       { navEl.getAttribute('data-nav') === 'projects' ? renderProjects() : renderDownloads(); }
+        if (navEl) {
+          var nav = navEl.getAttribute('data-nav');
+          if (nav === 'projects')       renderProjects();
+          else if (nav === 'downloads') renderDownloads();
+        }
         else if (fileEl) { renderComingSoon(fileEl.getAttribute('data-file')); }
       });
 
