@@ -640,7 +640,7 @@ html[data-dock="right"] #desktop {
 
 html[data-dock="right"] #menubar    { grid-area: menubar; }
 html[data-dock="right"] #desktop-bg { grid-area: bg; }
-html[data-dock="right"] #dock       { padding: 12px 8px; }
+html[data-dock="right"] #dock       { grid-area: dock; padding: 12px 8px; }
 html[data-dock="right"] .dock-inner { flex-direction: column; }
 
 /* === Settings Window === */
