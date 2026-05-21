@@ -158,6 +158,133 @@ var APPS = {
         '</div>' +
       '</div>';
     }
+  },
+  settings: {
+    title: 'Settings',
+    width: 640,
+    height: 440,
+    bodyClass: 'window-body--flush',
+    render: function() {
+      return '<div class="finder-body">' +
+        '<div class="finder-sidebar">' +
+          '<div class="finder-sidebar-section">Preferences</div>' +
+          '<div class="finder-sidebar-item active" data-panel="wallpaper">' +
+            '<svg class="finder-sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>' +
+            'Wallpaper' +
+          '</div>' +
+          '<div class="finder-sidebar-item" data-panel="appearance">' +
+            '<svg class="finder-sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>' +
+            'Appearance' +
+          '</div>' +
+          '<div class="finder-sidebar-item" data-panel="cursor">' +
+            '<svg class="finder-sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3l14 9-7 1-4 7z"/></svg>' +
+            'Cursor' +
+          '</div>' +
+          '<div class="finder-sidebar-item" data-panel="dock">' +
+            '<svg class="finder-sidebar-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="15" x2="21" y2="15"/></svg>' +
+            'Dock' +
+          '</div>' +
+        '</div>' +
+        '<div class="settings-main"></div>' +
+      '</div>';
+    },
+    onMount: function(win) {
+      var main         = win.querySelector('.settings-main');
+      var sidebarItems = win.querySelectorAll('.finder-sidebar-item');
+
+      var WALLPAPERS = [
+        { key: 'default', label: 'Default' },
+        { key: 'dots',    label: 'Dots'    },
+        { key: 'grid',    label: 'Grid'    },
+        { key: 'sunset',  label: 'Sunset'  },
+        { key: 'ocean',   label: 'Ocean'   },
+        { key: 'aurora',  label: 'Aurora'  }
+      ];
+
+      function setActive(panel) {
+        sidebarItems.forEach(function(item) {
+          item.classList.toggle('active', item.getAttribute('data-panel') === panel);
+        });
+      }
+
+      function renderWallpaper() {
+        var current = Settings.get('wallpaper');
+        var html = '<div class="settings-section-title">Wallpaper</div><div class="settings-swatch-grid">';
+        WALLPAPERS.forEach(function(w) {
+          html += '<div class="settings-swatch' + (current === w.key ? ' active' : '') +
+                  '" data-wallpaper="' + w.key + '" title="' + w.label + '"></div>';
+        });
+        html += '</div>';
+        main.innerHTML = html;
+        setActive('wallpaper');
+      }
+
+      function renderAppearance() {
+        var current = Settings.get('theme');
+        main.innerHTML =
+          '<div class="settings-section-title">Appearance</div>' +
+          '<div class="settings-option-row">' +
+            '<button class="settings-option-btn' + (current === 'dark'  ? ' active' : '') + '" data-theme="dark">Dark</button>' +
+            '<button class="settings-option-btn' + (current === 'light' ? ' active' : '') + '" data-theme="light">Light</button>' +
+          '</div>';
+        setActive('appearance');
+      }
+
+      function renderCursor() {
+        var current = Settings.get('cursorSize');
+        main.innerHTML =
+          '<div class="settings-section-title">Cursor Size</div>' +
+          '<div class="settings-option-row">' +
+            '<button class="settings-option-btn' + (current === 'small'  ? ' active' : '') + '" data-cursor="small">Small</button>' +
+            '<button class="settings-option-btn' + (current === 'medium' ? ' active' : '') + '" data-cursor="medium">Medium</button>' +
+            '<button class="settings-option-btn' + (current === 'large'  ? ' active' : '') + '" data-cursor="large">Large</button>' +
+          '</div>';
+        setActive('cursor');
+      }
+
+      function renderDock() {
+        var current = Settings.get('dockPosition');
+        main.innerHTML =
+          '<div class="settings-section-title">Dock Position</div>' +
+          '<div class="settings-option-row">' +
+            '<button class="settings-option-btn' + (current === 'bottom' ? ' active' : '') + '" data-dock-pos="bottom">Bottom</button>' +
+            '<button class="settings-option-btn' + (current === 'right'  ? ' active' : '') + '" data-dock-pos="right">Right</button>' +
+          '</div>';
+        setActive('dock');
+      }
+
+      sidebarItems.forEach(function(item) {
+        item.addEventListener('click', function() {
+          var panel = item.getAttribute('data-panel');
+          if (panel === 'wallpaper')        renderWallpaper();
+          else if (panel === 'appearance')  renderAppearance();
+          else if (panel === 'cursor')      renderCursor();
+          else if (panel === 'dock')        renderDock();
+        });
+      });
+
+      main.addEventListener('click', function(e) {
+        var swatchEl = e.target.closest('[data-wallpaper]');
+        var themeEl  = e.target.closest('[data-theme]');
+        var cursorEl = e.target.closest('[data-cursor]');
+        var dockEl   = e.target.closest('[data-dock-pos]');
+        if (swatchEl) {
+          Settings.set('wallpaper', swatchEl.getAttribute('data-wallpaper'));
+          renderWallpaper();
+        } else if (themeEl) {
+          Settings.set('theme', themeEl.getAttribute('data-theme'));
+          renderAppearance();
+        } else if (cursorEl) {
+          Settings.set('cursorSize', cursorEl.getAttribute('data-cursor'));
+          renderCursor();
+        } else if (dockEl) {
+          Settings.set('dockPosition', dockEl.getAttribute('data-dock-pos'));
+          renderDock();
+        }
+      });
+
+      renderWallpaper();
+    }
   }
 };
 
