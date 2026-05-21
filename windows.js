@@ -264,10 +264,10 @@ var APPS = {
       });
 
       main.addEventListener('click', function(e) {
-        var swatchEl = e.target.closest('[data-wallpaper]');
-        var themeEl  = e.target.closest('[data-theme]');
-        var cursorEl = e.target.closest('[data-cursor]');
-        var dockEl   = e.target.closest('[data-dock-pos]');
+        var swatchEl = e.target.closest('.settings-swatch');
+        var themeEl  = e.target.closest('button[data-theme]');
+        var cursorEl = e.target.closest('button[data-cursor]');
+        var dockEl   = e.target.closest('button[data-dock-pos]');
         if (swatchEl) {
           Settings.set('wallpaper', swatchEl.getAttribute('data-wallpaper'));
           renderWallpaper();
