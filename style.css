@@ -11,3 +11,10 @@
 *::after {
   box-sizing: border-box;
 }
+
+html[data-theme="light"] {
+  --bg:    #f0f0f0;
+  --fg:    #111111;
+  --muted: #555555;
+  --line:  rgba(0,0,0,0.12);
+}
