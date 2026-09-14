@@ -48,77 +48,107 @@ var APPS = {
     bodyClass: 'window-body--flush',
     onMount: function(win) {
       var main         = win.querySelector('.finder-main');
+      var pathEl       = win.querySelector('.finder-path');
       var sidebarItems = win.querySelectorAll('.finder-sidebar-item');
+      var cwd          = VFS.HOME;
 
       var FOLDER_SVG = '<svg class="finder-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>';
       var FILE_SVG   = '<svg class="finder-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>';
+      var LINK_SVG   = '<svg class="finder-icon-svg" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
 
-      function setActive(view) {
+      function setActive() {
         sidebarItems.forEach(function(item) {
-          item.classList.toggle('active', item.getAttribute('data-view') === view);
+          var view = item.getAttribute('data-view');
+          var target = view === 'home' ? VFS.HOME : VFS.HOME + '/' + view;
+          item.classList.toggle('active', cwd === target || (view !== 'home' && cwd.indexOf(target + '/') === 0));
         });
       }
 
-      function renderHome() {
-        main.innerHTML =
-          '<div class="finder-icon-grid">' +
-            '<div class="finder-icon-item" data-nav="projects">' + FOLDER_SVG + '<span class="finder-icon-label">Projects</span></div>' +
-            '<div class="finder-icon-item" data-nav="downloads">' + FOLDER_SVG + '<span class="finder-icon-label">Downloads</span></div>' +
-          '</div>';
-        setActive('home');
+      function renderDir(abs) {
+        cwd = abs;
+        pathEl.textContent = VFS.display(abs);
+        var names = (VFS.list(abs) || []).filter(function(n) { return n.charAt(0) !== '.'; });
+        if (!names.length) {
+          main.innerHTML = '<div class="finder-empty">This folder is empty.</div>';
+        } else {
+          var html = '<div class="finder-icon-grid">';
+          names.forEach(function(n) {
+            var child = VFS.normalize(abs + '/' + n);
+            var isDir = VFS.isDir(child);
+            var icon = isDir ? FOLDER_SVG : (n.slice(-4) === '.url' ? LINK_SVG : FILE_SVG);
+            html += '<div class="finder-icon-item" data-path="' + child + '" data-kind="' + (isDir ? 'dir' : 'file') + '" tabindex="0">' +
+                    icon + '<span class="finder-icon-label"></span></div>';
+          });
+          html += '</div>';
+          main.innerHTML = html;
+          var items = main.querySelectorAll('.finder-icon-item');
+          items.forEach(function(el, i) { el.querySelector('.finder-icon-label').textContent = names[i]; });
+        }
+        setActive();
       }
 
-      function renderProjects() {
-        main.innerHTML =
-          '<div class="finder-icon-grid">' +
-            '<div class="finder-icon-item" data-file="project_1.txt">' + FILE_SVG + '<span class="finder-icon-label">project_1.txt</span></div>' +
-            '<div class="finder-icon-item" data-file="project_2.txt">' + FILE_SVG + '<span class="finder-icon-label">project_2.txt</span></div>' +
-            '<div class="finder-icon-item" data-file="project_3.txt">' + FILE_SVG + '<span class="finder-icon-label">project_3.txt</span></div>' +
-          '</div>';
-        setActive('projects');
-      }
-
-      function renderDownloads() {
-        main.innerHTML = '<div class="finder-empty">This folder is empty.</div>';
-        setActive('downloads');
-      }
-
-      function renderComingSoon(filename) {
-        var div = document.createElement('div');
-        div.className = 'finder-coming-soon';
-        var nameEl = document.createElement('span');
-        nameEl.className = 'finder-coming-soon-name';
-        nameEl.textContent = filename;
-        var labelEl = document.createElement('span');
-        labelEl.className = 'finder-coming-soon-label';
-        labelEl.textContent = 'Coming Soon';
-        div.appendChild(nameEl);
-        div.appendChild(labelEl);
+      function renderFile(abs) {
+        var content = VFS.read(abs);
+        if (content === null) return;
+        var name = abs.split('/').pop();
+        pathEl.textContent = VFS.display(abs);
         main.innerHTML = '';
-        main.appendChild(div);
+        var wrap = document.createElement('div');
+        wrap.className = 'finder-file';
+        var head = document.createElement('div');
+        head.className = 'finder-file-head';
+        var back = document.createElement('button');
+        back.className = 'finder-back';
+        back.textContent = '← Back';
+        back.addEventListener('click', function() { renderDir(VFS.normalize(abs + '/..')); });
+        var title = document.createElement('span');
+        title.className = 'finder-file-name';
+        title.textContent = name;
+        head.appendChild(back);
+        head.appendChild(title);
+        if (name.slice(-4) === '.url') {
+          var a = document.createElement('a');
+          a.className = 'finder-open-link';
+          a.href = content.trim();
+          a.target = '_blank';
+          a.rel = 'noopener';
+          a.textContent = 'Open ↗';
+          head.appendChild(a);
+        }
+        var pre = document.createElement('pre');
+        pre.className = 'finder-file-body';
+        pre.textContent = content;
+        wrap.appendChild(head);
+        wrap.appendChild(pre);
+        main.appendChild(wrap);
       }
 
       sidebarItems.forEach(function(item) {
         item.addEventListener('click', function() {
           var view = item.getAttribute('data-view');
-          if (view === 'home')           renderHome();
-          else if (view === 'projects')  renderProjects();
-          else if (view === 'downloads') renderDownloads();
+          renderDir(view === 'home' ? VFS.HOME : VFS.HOME + '/' + view);
         });
       });
 
+      function openEl(el) {
+        var path = el.getAttribute('data-path');
+        if (el.getAttribute('data-kind') === 'dir') renderDir(path);
+        else renderFile(path);
+      }
       main.addEventListener('click', function(e) {
-        var navEl  = e.target.closest('[data-nav]');
-        var fileEl = e.target.closest('[data-file]');
-        if (navEl) {
-          var nav = navEl.getAttribute('data-nav');
-          if (nav === 'projects')       renderProjects();
-          else if (nav === 'downloads') renderDownloads();
-        }
-        else if (fileEl) { renderComingSoon(fileEl.getAttribute('data-file')); }
+        var el = e.target.closest('[data-path]');
+        if (el && main.contains(el)) openEl(el);
+      });
+      main.addEventListener('keydown', function(e) {
+        if (e.key !== 'Enter') return;
+        var el = e.target.closest('[data-path]');
+        if (el) openEl(el);
+      });
+      win.querySelector('.finder-up').addEventListener('click', function() {
+        if (cwd !== '/') renderDir(VFS.normalize(cwd + '/..'));
       });
 
-      renderHome();
+      renderDir(VFS.HOME);
     },
     render: function() {
       return '<div class="finder-body">' +
@@ -137,8 +167,42 @@ var APPS = {
             'Downloads' +
           '</div>' +
         '</div>' +
-        '<div class="finder-main"></div>' +
+        '<div class="finder-content">' +
+          '<div class="finder-toolbar"><button class="finder-up" aria-label="Up one level">↑</button><span class="finder-path"></span></div>' +
+          '<div class="finder-main"></div>' +
+        '</div>' +
       '</div>';
+    }
+  },
+  projects: {
+    title: 'Projects',
+    width: 560,
+    height: 420,
+    bodyClass: null,
+    onMount: function(win) {
+      win.querySelectorAll('[data-open-terminal]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          WindowManager.open('terminal', { cwd: btn.getAttribute('data-open-terminal') });
+        });
+      });
+    },
+    render: function() {
+      var esc = function(s) { return String(s).replace(/[&<>"']/g, function(c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+      return '<div class="project-list">' + VFS.PROJECTS.map(function(p) {
+        return '<article class="project-card">' +
+          '<div class="project-head">' +
+            '<h3 class="project-name"><a href="' + esc(p.url) + '" target="_blank" rel="noopener">' + esc(p.name) + '</a></h3>' +
+            '<div class="project-tags">' + p.tags.map(function(t) { return '<span>' + esc(t) + '</span>'; }).join('') + '</div>' +
+          '</div>' +
+          '<p class="project-tagline">' + esc(p.tagline) + '</p>' +
+          '<p class="project-desc">' + esc(p.description) + '</p>' +
+          '<ul class="project-points">' + p.points.map(function(pt) { return '<li>' + esc(pt) + '</li>'; }).join('') + '</ul>' +
+          '<div class="project-actions">' +
+            '<a class="project-link" href="' + esc(p.url) + '" target="_blank" rel="noopener">View on GitHub ↗</a>' +
+            '<button class="project-link project-link--btn" data-open-terminal="' + esc(p.path) + '">Open in Terminal</button>' +
+          '</div>' +
+        '</article>';
+      }).join('') + '</div>';
     }
   },
   terminal: {
@@ -146,8 +210,8 @@ var APPS = {
     width: 600,
     height: 400,
     bodyClass: 'window-body--flush',
-    onMount: function(win) {
-      Terminal.create(win);
+    onMount: function(win, opts) {
+      Terminal.create(win, opts || {});
     },
     render: function() {
       return '<div class="term-body">' +
@@ -363,7 +427,7 @@ var WindowManager = (function() {
     });
   }
 
-  function open(appId) {
+  function open(appId, opts) {
     var app = APPS[appId];
     if (!app) return;
 
@@ -414,7 +478,7 @@ var WindowManager = (function() {
 
     desktop.appendChild(win);
     focus(windowId);
-    if (app.onMount) app.onMount(win);
+    if (app.onMount) app.onMount(win, opts);
   }
 
   return { open: open, close: close, focus: focus };

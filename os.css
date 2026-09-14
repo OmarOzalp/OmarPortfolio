@@ -776,3 +776,161 @@ html[data-theme="light"][data-wallpaper="grid"] #desktop-bg {
   background-image: linear-gradient(rgba(0,0,0,0.08) 1px, transparent 1px),
                     linear-gradient(90deg, rgba(0,0,0,0.08) 1px, transparent 1px);
 }
+
+/* === Finder: toolbar, file viewer === */
+.finder-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.finder-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: 'SF Mono', ui-monospace, 'Fira Mono', 'Consolas', monospace;
+  flex-shrink: 0;
+}
+
+.finder-up,
+.finder-back {
+  background: transparent;
+  border: 1px solid var(--line);
+  color: var(--fg);
+  border-radius: 4px;
+  font: inherit;
+  font-size: 0.72rem;
+  padding: 0.1rem 0.5rem;
+  cursor: default;
+}
+
+.finder-up:hover,
+.finder-back:hover { background: rgba(255,255,255,0.07); }
+html[data-theme="light"] .finder-up:hover,
+html[data-theme="light"] .finder-back:hover { background: rgba(0,0,0,0.06); }
+
+.finder-file {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.finder-file-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+  flex-shrink: 0;
+}
+
+.finder-file-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.finder-open-link {
+  margin-left: auto;
+  font-size: 0.75rem;
+  color: var(--fg);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.15rem 0.5rem;
+}
+.finder-open-link:hover { border-color: var(--fg); }
+
+.finder-file-body {
+  margin: 0;
+  flex: 1;
+  overflow: auto;
+  font-family: 'SF Mono', ui-monospace, 'Fira Mono', 'Consolas', monospace;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--fg);
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+}
+
+/* === Projects app === */
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.project-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem 1.1rem;
+}
+
+.project-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.project-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+.project-name a { color: var(--fg); text-decoration: none; }
+.project-name a:hover { text-decoration: underline; }
+
+.project-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.project-tags span {
+  font-size: 0.62rem;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+}
+
+.project-tagline {
+  margin: 0.6rem 0 0.25rem 0;
+  font-size: 0.85rem;
+  color: var(--fg);
+  line-height: 1.5;
+}
+.project-desc {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.project-points {
+  margin: 0 0 0.8rem 1rem;
+  padding: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.project-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+.project-link {
+  font-size: 0.75rem;
+  color: var(--fg);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 0.25rem 0.6rem;
+  background: transparent;
+  font-family: inherit;
+  cursor: default;
+}
+.project-link:hover { border-color: var(--fg); }
