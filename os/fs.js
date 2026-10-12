@@ -1,4 +1,4 @@
-// fs.js — shared virtual filesystem for Finder and Terminal.
+// fs.js — shared virtual filesystem for Explorer and the DOS prompt, plus Omar's profile data.
 // Directories are objects, files are strings. Paths are absolute, e.g. /home/omar/projects.
 
 var VFS = (function() {
@@ -31,6 +31,56 @@ var VFS = (function() {
     'Repo: https://github.com/OmarOzalp/scubago'
   ].join('\n');
 
+  // Who Omar is, in one place. Used by the About, Experience and Resume apps and the plain page.
+  var PROFILE = {
+    name: 'Omar Ozalp',
+    headline: 'ECE, CS & Math @ Duke University',
+    bio: 'I\'m an ECE, CS & Math student at Duke. I\'ve interned across Kuwait and Dubai, building data tools ' +
+      'and consumer apps at companies ranging from real estate platforms to retail giants. I like problems that ' +
+      'sit where engineering meets people. Off the keyboard I\'m diving, wrestling, running track, sketching, ' +
+      'or building something with a power drill I probably shouldn\'t own.',
+    links: {
+      github: 'https://github.com/omarozalp',
+      linkedin: 'https://www.linkedin.com/in/omar-ozalp',
+      email: 'omar_ozalp@duke.edu'
+    },
+    experience: [
+      { company: '4Sale', role: 'Intern', location: 'Kuwait City, Kuwait',
+        desc: 'Used SQL to identify and flag malicious client activity within the platform.' },
+      { company: 'Property Finder', role: 'Intern', location: 'Dubai, UAE',
+        desc: 'Developed data reports analyzing real estate market trends across the UAE.' },
+      { company: 'Majid Al Futtaim', role: 'Intern', location: 'Dubai, UAE',
+        desc: 'Built features for a loyalty and rewards app, personalizing offers for users across the MAF portfolio.' }
+    ],
+    activities: [
+      { name: 'Delta Sigma Pi', desc: 'Co-ed Business Fraternity \xb7 Duke University' }
+    ],
+    interests: ['Scuba diving', 'Wrestling', 'Track & field', 'Sketching', 'Building things', 'Gaming']
+  };
+
+  var INTERESTS_TXT = [
+    'interests.txt -- the non-resume stuff',
+    '======================================',
+    '',
+    '[Diving]      My favorite place is somewhere below the surface. I built ScubaGo',
+    '              so I could stop guessing where the whale sharks are.',
+    '',
+    '[Wrestling]   The headgear on my desk has seen things. Wrestling taught me',
+    '              that the mat is extremely honest about your conditioning.',
+    '',
+    '[Track]       The spikes are on the desk so I remember to run fast.',
+    '              (And to stop leaving spikes on the desk.)',
+    '',
+    '[Sketching]   I keep a sketchbook for ideas that don\'t fit in a text editor.',
+    '',
+    '[Building]    Proud owner of one (1) power drill and many opinions about',
+    '              wall anchors.',
+    '',
+    '[Gaming]      The RGB on my mouse adds +10 FPS. This is science.',
+    '',
+    '[Duke]        ECE, CS & Math. Yes, all three. Yes, on purpose.'
+  ].join('\n');
+
   var tree = {
     home: {
       omar: {
@@ -43,11 +93,13 @@ var VFS = (function() {
           'retail giants. I like working on problems that sit at the',
           'intersection of engineering and people.'
         ].join('\n'),
+        'interests.txt': INTERESTS_TXT,
         'contact.txt': [
           'github:   https://github.com/omarozalp',
           'linkedin: https://www.linkedin.com/in/omar-ozalp',
           'email:    omar_ozalp@duke.edu'
         ].join('\n'),
+        'resume.doc': '#!app:resume',
         '.bashrc': '# OzalpOS shell config\nexport PS1=\'omar@ozalpos:\\w$ \'\nalias ll=\'ls -la\'',
         projects: {
           scubago: {
@@ -56,18 +108,31 @@ var VFS = (function() {
             'link.url': 'https://github.com/OmarOzalp/scubago'
           }
         },
+        games: {
+          'solitaire.exe': '#!app:solitaire',
+          'minesweeper.exe': '#!app:minesweeper',
+          'snake.exe': '#!app:snake'
+        },
+        pictures: {},
         downloads: {}
       }
+    },
+    recycled: {
+      'sleep_schedule.txt': 'This file is empty.\nIt has always been empty.\nIt will be empty again during finals.',
+      'procrastination_plan_v7.txt': 'Step 1: Make a plan.\nStep 2: Refine the plan.\nStep 3: Save as procrastination_plan_v8.txt.',
+      'weight_cut_snacks.txt': 'Approved snacks the week of a weigh-in:\n  1. Water (sips)\n  2. Thinking about pizza\n  3. Looking at pizza\n  4. Water (smaller sips)',
+      'excuses.txt': '- My dive computer ate my homework.\n- The power drill was too loud to hear the alarm.\n- Lag. It was lag.',
+      'my_first_website.html': '<html>\n<body bgcolor="black">\n<marquee><font color="lime">WELCOME 2 OMARS HOMEPAGE!!!</font></marquee>\n<img src="under_construction.gif">\n<p>You are visitor #000042</p>\n</body>\n</html>'
     },
     etc: {
       motd: 'Welcome to OzalpOS. Type \'help\' for available commands.',
       hostname: 'ozalpos',
-      'os-release': 'NAME="OzalpOS"\nVERSION="1.0"\nID=ozalpos\nPRETTY_NAME="OzalpOS 1.0"'
+      'os-release': 'NAME="OzalpOS"\nVERSION="98"\nID=ozalpos\nPRETTY_NAME="OzalpOS 98"'
     },
     bin: {}
   };
 
-  // Project metadata used by the Projects app and Finder.
+  // Project metadata used by the Projects app, Explorer and the desk's floppy disks.
   var PROJECTS = [
     {
       id: 'scubago',
@@ -162,7 +227,9 @@ var VFS = (function() {
 
   return {
     HOME: HOME,
+    PROFILE: PROFILE,
     PROJECTS: PROJECTS,
+    appOf: function(absPath) { var c = read(absPath); return c && c.indexOf('#!app:') === 0 ? c.slice(6).trim() : null; },
     normalize: normalize,
     isDir: isDir,
     isFile: isFile,

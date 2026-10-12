@@ -1,0 +1,123 @@
+/* snake.css — Snake for OzalpOS 98 (games/snake.js). Game Boy-green LCD in a sunken bezel. */
+
+.snake-body {
+  padding: 0;
+  background: var(--face);
+}
+
+.snake {
+  width: max-content;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* --- The LCD --- */
+.snake-screen {
+  position: relative;
+  align-self: center;
+  margin: 3px 3px 1px;
+  padding: 2px;
+  background: #0f380f;
+  box-shadow: var(--sunken);
+  line-height: 0;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  cursor: default;
+}
+.snake-canvas {
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.snake-overlay {
+  position: absolute;
+  inset: 2px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(15, 56, 15, 0.8);
+  color: #9bbc0f;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  line-height: 1;
+  text-align: center;
+}
+.snake-title {
+  font-size: 52px;
+  letter-spacing: 4px;
+  text-shadow: 3px 3px 0 #306230;
+}
+.snake-sub { font-size: 22px; }
+.snake-score-big { font-size: 26px; color: #9bbc0f; }
+.snake-small { font-size: 18px; color: #8bac0f; }
+.snake-blink { animation: snake-blink 1.1s steps(2, start) infinite; }
+@keyframes snake-blink { to { visibility: hidden; } }
+
+.snake-legend {
+  display: flex;
+  gap: 18px;
+  margin: 4px 0 2px;
+  color: #8bac0f;
+  font-size: 20px;
+}
+.snake-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.snake-legend svg { width: 16px; height: 16px; display: block; }
+
+/* --- On-screen D-pad (touch only) --- */
+.snake-pad {
+  display: none;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(3, 46px);
+  gap: 4px;
+  justify-content: center;
+  margin: 10px auto 8px;
+  touch-action: none;
+}
+.snake-touch .snake-pad { display: grid; }
+.snake-pad .btn {
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.snake-pad .btn:active:not(:disabled) { padding: 2px 0 0 2px; }
+.snake-pad svg { width: 14px; height: 14px; fill: #000; shape-rendering: crispEdges; }
+.snake-pad .snake-up    { grid-column: 2; grid-row: 1; }
+.snake-pad .snake-left  { grid-column: 1; grid-row: 2; }
+.snake-pad .snake-mid   { grid-column: 2; grid-row: 2; }
+.snake-pad .snake-right { grid-column: 3; grid-row: 2; }
+.snake-pad .snake-down  { grid-column: 2; grid-row: 3; }
+.snake-pad .snake-mid svg { width: 10px; height: 10px; }
+
+.snake .statusbar { margin-top: 2px; }
+
+/* --- Phones: fill the maximized window --- */
+.snake.snake-mobile {
+  width: auto;
+  min-height: 100%;
+  padding-top: 4px;
+}
+.snake-mobile .snake-pad {
+  grid-template-columns: repeat(3, 76px);
+  grid-template-rows: repeat(3, 62px);
+  gap: 6px;
+  margin: 14px auto 10px;
+}
+.snake-mobile .snake-pad svg { width: 18px; height: 18px; }
+.snake-mobile .snake-pad .snake-mid svg { width: 12px; height: 12px; }
+.snake-mobile .statusbar { margin-top: auto; }
+
+/* --- High-score name prompt --- */
+.snake-ask-msg { margin: 0 0 10px; line-height: 15px; }
+.snake-ask-input { width: 100%; }
+
+@media (prefers-reduced-motion: reduce) {
+  .snake-blink { animation: none; }
+}

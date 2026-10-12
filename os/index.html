@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>OzalpOS 98</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%222%22 y=%222%22 width=%2228%22 height=%2222%22 rx=%223%22 fill=%22%23d9d3c0%22/%3E%3Crect x=%225%22 y=%225%22 width=%2222%22 height=%2216%22 fill=%22%23008080%22/%3E%3Crect x=%2210%22 y=%2226%22 width=%2212%22 height=%224%22 fill=%22%23c4bda6%22/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="os.css">
+  <link rel="stylesheet" href="games/solitaire.css">
+  <link rel="stylesheet" href="games/minesweeper.css">
+  <link rel="stylesheet" href="games/snake.css">
+</head>
+<body data-state="off">
+
+  <!-- Monitor off / standby -->
+  <div id="screen-off" class="layer">
+    <p class="off-hint">Tap or press any key to power on</p>
+  </div>
+
+  <!-- BIOS power-on self test -->
+  <div id="bios" class="layer" aria-live="polite">
+    <div class="bios-logo" aria-hidden="true">
+      <svg viewBox="0 0 120 72">
+        <path d="M8 60 Q30 10 60 36 T112 18" fill="none" stroke="#6fd0ff" stroke-width="5"/>
+        <circle cx="96" cy="14" r="8" fill="#ffd84a"/>
+        <path d="M6 66h108" stroke="#2f8f3a" stroke-width="4"/>
+      </svg>
+      OzalpBIOS
+    </div>
+    <div id="bios-text"></div>
+    <div class="bios-foot">Press <span class="bios-bright">DEL</span> to enter SETUP, <span class="bios-bright">any key</span> to skip
+08/14/98-i440BX-OZALP-2A69KO0FC-00</div>
+  </div>
+
+  <!-- Startup splash -->
+  <div id="splash" class="layer">
+    <div class="splash-center">
+      <span id="splash-logo"></span>
+      <div class="splash-word"><small>Omar Ozalp's</small>OzalpOS<sup>98</sup></div>
+    </div>
+    <p class="splash-tag">Starting OzalpOS 98... please don't unplug the hamster.</p>
+    <div class="splash-bar"></div>
+  </div>
+
+  <!-- Desktop -->
+  <div id="desktop" class="layer">
+    <div id="desktop-icons" role="list" aria-label="Desktop"></div>
+    <div id="windows"></div>
+    <div id="start-menu" hidden role="menu" aria-label="Start menu"></div>
+    <div id="taskbar">
+      <button id="start-button" data-menu-anchor aria-haspopup="menu" aria-expanded="false"><span id="start-logo"></span><span>Start</span></button>
+      <span class="taskbar-sep"></span>
+      <div id="taskbar-windows"></div>
+      <div id="tray">
+        <button id="tray-volume" aria-label="Mute sounds"></button>
+        <span id="tray-clock" aria-live="off"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shut down -->
+  <div id="shutdown" class="layer">
+    <p>It's now safe to turn off your computer.<small>(or just press any key to reboot)</small></p>
+  </div>
+
+  <script src="icons.js"></script>
+  <script src="sound.js"></script>
+  <script src="settings.js"></script>
+  <script src="fs.js"></script>
+  <script src="wm.js"></script>
+  <script src="terminal.js"></script>
+  <script src="apps.js"></script>
+  <script src="games/solitaire.js"></script>
+  <script src="games/minesweeper.js"></script>
+  <script src="games/snake.js"></script>
+  <script src="os.js"></script>
+</body>
+</html>
