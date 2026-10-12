@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Omar Ozalp - plain version</title>
+  <meta name="description" content="Omar Ozalp: ECE, CS & Math at Duke. Experience, projects and contact info on one simple page.">
+  <style>
+    :root {
+      --bg: #fbfaf7;
+      --fg: #1c1f26;
+      --muted: #5d6270;
+      --line: #e3e0d8;
+      --accent: #012169;
+      --chip: #efece4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #111318; --fg: #ece9e2; --muted: #9a9fab; --line: #2a2d35; --accent: #8fb0ff; --chip: #1c1f26; }
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--fg);
+      font: 16px/1.6 system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    }
+    main { max-width: 720px; margin: 0 auto; padding: 40px 20px 64px; }
+    .top { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 36px; font-size: 14px; }
+    .top a { color: var(--muted); }
+    h1 { font-size: 34px; line-height: 1.15; margin: 0 0 4px; letter-spacing: -0.5px; }
+    .headline { color: var(--muted); margin: 0 0 16px; font-size: 17px; }
+    .links { display: flex; flex-wrap: wrap; gap: 8px 16px; margin: 16px 0 0; padding: 0; list-style: none; }
+    .links a { color: var(--accent); font-weight: 600; }
+    h2 { font-size: 13px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 40px 0 12px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+    .item { margin: 0 0 18px; }
+    .item-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .item-head b { font-size: 17px; }
+    .item-head span { color: var(--muted); font-size: 14px; }
+    .item p { margin: 2px 0 0; }
+    .item ul { margin: 6px 0 0; padding-left: 20px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 0; padding: 0; list-style: none; }
+    .chips li { background: var(--chip); border-radius: 999px; padding: 2px 12px; font-size: 14px; }
+    a { color: var(--accent); }
+    footer { margin-top: 48px; color: var(--muted); font-size: 14px; }
+    @media print { .top, footer { display: none; } main { padding-top: 0; } }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="top">
+      <a href="./">&larr; Back to the desk (the fun version)</a>
+      <span id="resume-slot"></span>
+    </div>
+
+    <h1>Omar Ozalp</h1>
+    <p class="headline" id="headline">ECE, CS &amp; Math @ Duke University</p>
+    <p id="bio"></p>
+    <ul class="links">
+      <li><a href="mailto:omar_ozalp@duke.edu">omar_ozalp@duke.edu</a></li>
+      <li><a href="https://www.linkedin.com/in/omar-ozalp">LinkedIn</a></li>
+      <li><a href="https://github.com/omarozalp">GitHub</a></li>
+    </ul>
+
+    <h2>Education</h2>
+    <div class="item">
+      <div class="item-head"><b>Duke University</b><span>Durham, NC</span></div>
+      <p>Electrical &amp; Computer Engineering, Computer Science &amp; Mathematics</p>
+    </div>
+
+    <h2>Experience</h2>
+    <div id="experience"></div>
+
+    <h2>Projects</h2>
+    <div id="projects"></div>
+
+    <h2>Activities</h2>
+    <div id="activities"></div>
+
+    <h2>Interests</h2>
+    <ul class="chips" id="interests"></ul>
+
+    <footer>This is the plain version. The real one has a CRT, Minesweeper and a dive mask.</footer>
+  </main>
+
+  <script src="os/fs.js"></script>
+  <script>
+    (function() {
+      var P = VFS.PROFILE;
+      // Set to a path like 'assets/resume.pdf' once the PDF is in the repo.
+      var RESUME_PDF = null;
+      function el(tag, text, cls) {
+        var e = document.createElement(tag);
+        if (text != null) e.textContent = text;
+        if (cls) e.className = cls;
+        return e;
+      }
+      document.getElementById('headline').textContent = P.headline;
+      document.getElementById('bio').textContent = P.bio;
+      if (RESUME_PDF) {
+        var a = el('a', 'Download resume (PDF)');
+        a.href = RESUME_PDF;
+        document.getElementById('resume-slot').appendChild(a);
+      }
+      var exp = document.getElementById('experience');
+      P.experience.forEach(function(x) {
+        var item = el('div', null, 'item');
+        var head = el('div', null, 'item-head');
+        head.appendChild(el('b', x.company + ' — ' + x.role));
+        head.appendChild(el('span', x.location));
+        item.appendChild(head);
+        item.appendChild(el('p', x.desc));
+        exp.appendChild(item);
+      });
+      var proj = document.getElementById('projects');
+      VFS.PROJECTS.forEach(function(p) {
+        var item = el('div', null, 'item');
+        var head = el('div', null, 'item-head');
+        var name = el('b');
+        var link = el('a', p.name);
+        link.href = p.url;
+        name.appendChild(link);
+        head.appendChild(name);
+        head.appendChild(el('span', p.tags.join(' · ')));
+        item.appendChild(head);
+        item.appendChild(el('p', p.tagline + ' ' + p.description));
+        var ul = el('ul');
+        p.points.forEach(function(pt) { ul.appendChild(el('li', pt)); });
+        item.appendChild(ul);
+        proj.appendChild(item);
+      });
+      var act = document.getElementById('activities');
+      P.activities.forEach(function(a) {
+        var item = el('div', null, 'item');
+        var head = el('div', null, 'item-head');
+        head.appendChild(el('b', a.name));
+        item.appendChild(head);
+        item.appendChild(el('p', a.desc));
+        act.appendChild(item);
+      });
+      var ints = document.getElementById('interests');
+      P.interests.forEach(function(i) { ints.appendChild(el('li', i)); });
+    })();
+  </script>
+</body>
+</html>
