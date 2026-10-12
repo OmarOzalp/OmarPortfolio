@@ -1,4 +1,4 @@
-// terminal.js — a Linux-style shell over the shared VFS.
+// terminal.js — the OZ-DOS Prompt: looks like DOS, secretly a Linux-style shell over the shared VFS.
 
 var Terminal = (function() {
 
@@ -6,7 +6,16 @@ var Terminal = (function() {
   var BOOT_TIME = Date.now();
 
   var HELP_TEXT = [
-    'OzalpOS shell — available commands:',
+    'OZ-DOS 98 -- it looks like DOS, but it speaks Linux too.',
+    '',
+    'DOS-ish:',
+    '  dir, cls, type <f>, ver, md, del, cd..   the classics',
+    '  start <app>          launch an app: solitaire, minesweeper, snake,',
+    '                       about, resume, projects, explorer, pictures',
+    '  wallpaper [name]     change the desktop (clouds, ocean, duke, ...)',
+    '  exit                 close this window',
+    '',
+    'Linux-ish:',
     '  ls [-la] [path]      list directory contents',
     '  cd [path]            change directory',
     '  pwd                  print working directory',
@@ -25,7 +34,6 @@ var Terminal = (function() {
     '  uname [-a]           system information',
     '  uptime / date        time information',
     '  neofetch             system summary',
-    '  theme [dark|light]   change the OS theme',
     '  history              command history',
     '  clear                clear the terminal (or Ctrl+L)',
     '  help                 this message',
@@ -39,7 +47,19 @@ var Terminal = (function() {
     email:    'mailto:omar_ozalp@duke.edu'
   };
 
-  function promptStr(cwd) { return USER + '@' + HOST + ':' + VFS.display(cwd) + '$'; }
+  function promptStr(cwd) { return 'C:' + (cwd === '/' ? '\\' : cwd.replace(/\//g, '\\').toUpperCase()) + '>'; }
+
+  var APP_ALIASES = {
+    solitaire: 'solitaire', sol: 'solitaire', minesweeper: 'minesweeper', winmine: 'minesweeper', snake: 'snake',
+    about: 'about', resume: 'resume', projects: 'projects', experience: 'experience', explorer: 'explorer',
+    pictures: 'pictures', notepad: 'notepad', display: 'display', help: 'help'
+  };
+
+  function launch(app, opts) {
+    if (typeof OS === 'undefined' || !OS.wm) return 'start: no window manager here.';
+    OS.wm.open(app, opts || {});
+    return '';
+  }
 
   function longListing(abs, names) {
     var lines = ['total ' + (names.length * 4)];
@@ -116,8 +136,8 @@ var Terminal = (function() {
     cd: function(args, ctx) {
       var target = args[0] || '~';
       var abs = VFS.normalize(target, ctx.cwd);
-      if (VFS.isFile(abs)) return 'bash: cd: ' + target + ': Not a directory';
-      if (!VFS.isDir(abs)) return 'bash: cd: ' + target + ': No such file or directory';
+      if (VFS.isFile(abs)) return 'Invalid directory';
+      if (!VFS.isDir(abs)) return 'Invalid directory';
       ctx.cwd = abs;
       return '';
     },
@@ -221,7 +241,7 @@ var Terminal = (function() {
     whoami: function() { return USER; },
     hostname: function() { return HOST; },
     uname: function(args) {
-      return args.indexOf('-a') >= 0 ? 'Linux ' + HOST + ' 6.1.0-ozalp #1 SMP PREEMPT_DYNAMIC x86_64 GNU/Linux' : 'Linux';
+      return args.indexOf('-a') >= 0 ? 'OzalpOS ' + HOST + ' 4.10.1998 #1 (secretly Linux 6.1.0-ozalp) i686' : 'OzalpOS';
     },
     date: function() { return new Date().toString(); },
     uptime: function() { return ' up ' + fmtUptime() + ',  1 user,  load average: 0.00, 0.01, 0.05'; },
@@ -229,7 +249,7 @@ var Terminal = (function() {
       return ctx.history.map(function(h, i) { return '  ' + (i + 1) + '  ' + h; }).join('\n');
     },
     clear: function(args, ctx) { ctx.clear = true; return ''; },
-    exit: function() { return 'logout\n(There is no escape. Close the window instead.)'; },
+    exit: function(args, ctx) { if (ctx.win) { ctx.win.close(); return ''; } return 'logout'; },
     sudo: function() { return USER + ' is not in the sudoers file.  This incident will be reported.'; },
     man: function(args) { return args[0] ? 'No manual entry for ' + args[0] + '. Try \'help\'.' : 'What manual page do you want?'; },
     vim:  function() { return 'vim: not installed. (You\'re on a portfolio, not a server.)'; },
@@ -248,25 +268,39 @@ var Terminal = (function() {
       return 'Opening ' + url + ' ...';
     },
 
-    theme: function(args) {
-      var next = args[0];
-      if (!next) next = (typeof Settings !== 'undefined' && Settings.get('theme') === 'dark') ? 'light' : 'dark';
-      if (next !== 'dark' && next !== 'light') return 'theme: expected \'dark\' or \'light\'';
-      if (typeof Settings !== 'undefined') Settings.set('theme', next);
-      else document.documentElement.setAttribute('data-theme', next);
-      return 'Theme set to ' + next + '.';
+    wallpaper: function(args) {
+      if (typeof Settings === 'undefined') return 'wallpaper: settings unavailable';
+      var keys = Settings.WALLPAPERS.map(function(w) { return w.key; });
+      if (!args[0]) return 'Current wallpaper: ' + Settings.get('wallpaper') + '\nAvailable: ' + keys.join(', ');
+      if (keys.indexOf(args[0]) < 0) return 'wallpaper: unknown \'' + args[0] + '\'. Try: ' + keys.join(', ');
+      Settings.set('wallpaper', args[0]);
+      return 'Wallpaper set to ' + args[0] + '.';
     },
 
+    start: function(args, ctx) {
+      var name = (args[0] || '').toLowerCase().replace(/\.exe$/, '');
+      if (!name) return 'usage: start <app>  (' + Object.keys(APP_ALIASES).join(', ') + ')';
+      if (APP_ALIASES[name]) return launch(APP_ALIASES[name]);
+      var abs = VFS.normalize(args[0], ctx.cwd);
+      var app = VFS.appOf(abs);
+      if (app) return launch(app);
+      if (VFS.isDir(abs)) return launch('explorer', { path: abs });
+      if (VFS.isFile(abs)) return launch('notepad', { path: abs });
+      return 'Bad command or file name';
+    },
+
+    ver: function() { return '\nOzalpOS 98 [Version 4.10.1998]\n'; },
+
     neofetch: function() {
-      var theme = (typeof Settings !== 'undefined') ? Settings.get('theme') : 'dark';
+      var wall = (typeof Settings !== 'undefined') ? Settings.get('wallpaper') : 'teal';
       var right = [
         USER + '@' + HOST,
         '--------------',
-        'OS: OzalpOS 1.0 (browser)',
+        'OS: OzalpOS 98 (in a browser, on a CRT, on a desk)',
         'Kernel: 6.1.0-ozalp',
-        'Shell: ozsh 1.0',
+        'Shell: OZ-DOS 98 (secretly ozsh)',
         'Uptime: ' + fmtUptime(),
-        'Theme: ' + theme,
+        'Wallpaper: ' + wall,
         'Projects: ' + VFS.PROJECTS.map(function(p) { return p.id; }).join(', '),
         'Majors: ECE, CS, Math'
       ];
@@ -285,8 +319,19 @@ var Terminal = (function() {
     }
   };
   COMMANDS.ll = function(args, ctx) { return COMMANDS.ls(['-la'].concat(args), ctx); };
-  COMMANDS.dir = COMMANDS.ls;
-  COMMANDS.less = COMMANDS.more = COMMANDS.cat;
+  COMMANDS.dir = function(args, ctx) { return COMMANDS.ls(['-l'].concat(args.filter(function(a) { return a.charAt(0) !== '/'; })), ctx); };
+  COMMANDS.less = COMMANDS.more = COMMANDS.type = COMMANDS.cat;
+  COMMANDS.cls = COMMANDS.clear;
+  COMMANDS.del = COMMANDS.erase = COMMANDS.rm;
+  COMMANDS.md = COMMANDS.mkdir;
+  COMMANDS['cd..'] = function(args, ctx) { return COMMANDS.cd(['..'], ctx); };
+  COMMANDS['cd\\'] = function(args, ctx) { return COMMANDS.cd(['/'], ctx); };
+  COMMANDS.chdir = COMMANDS.cd;
+  COMMANDS.win = function() { return 'You\'re already in OzalpOS. It\'s windows all the way down.'; };
+  COMMANDS.format = function() { return 'Nice try. C: stays.'; };
+  Object.keys(APP_ALIASES).forEach(function(k) {
+    if (!COMMANDS[k]) COMMANDS[k] = function(args, ctx) { return COMMANDS.start([k].concat(args), ctx); };
+  });
 
   function headTail(args, ctx, which) {
     var n = 10, files = [];
@@ -359,7 +404,12 @@ var Terminal = (function() {
     if (stdin !== null && name === 'sort') return stdin.split('\n').sort().join('\n');
     if (stdin !== null && name === 'uniq') return stdin.split('\n').filter(function(l, i, a) { return i === 0 || l !== a[i - 1]; }).join('\n');
     var fn = COMMANDS[name];
-    if (!fn) { ctx.failed = true; return 'bash: ' + name + ': command not found'; }
+    if (!fn) {
+      var app = VFS.appOf(VFS.normalize(name, ctx.cwd)) || VFS.appOf(VFS.normalize(name + '.exe', ctx.cwd));
+      if (app) return launch(app);
+      ctx.failed = true;
+      return 'Bad command or file name';
+    }
     return fn(args, ctx);
   }
 
@@ -388,23 +438,27 @@ var Terminal = (function() {
     return null;
   }
 
-  function create(win, opts) {
+  // root: the element holding the .term-body markup; handle: the OS window handle (for `exit`).
+  function create(root, opts, handle) {
+    var win = root;
     var outputEl = win.querySelector('.term-output');
     var inputEl  = win.querySelector('.term-input');
     var promptEl = win.querySelector('.term-prompt');
     var startCwd = (opts && opts.cwd && VFS.isDir(opts.cwd)) ? opts.cwd : VFS.HOME;
-    var ctx = { cwd: startCwd, history: [], failed: false, clear: false };
+    var ctx = { cwd: startCwd, history: [], failed: false, clear: false, win: handle || null };
+    var scroller = win.querySelector('.term-body');
     var histIdx = 0;
 
-    outputEl.textContent = 'OzalpOS 1.0 (GNU/Linux 6.1.0-ozalp x86_64)\n\n' + (VFS.read('/etc/motd') || '') + '\n\n';
+    outputEl.textContent = '\nOzalpOS 98 [Version 4.10.1998]\n(C) Copyright Omar Ozalp 1998-2026.\n\n' +
+      'Psst: this prompt secretly speaks Linux too. Type HELP.\n\n';
 
-    function scroll() { outputEl.scrollTop = outputEl.scrollHeight; }
+    function scroll() { scroller.scrollTop = scroller.scrollHeight; }
     function append(text) { outputEl.textContent += text + '\n'; scroll(); }
     function updatePrompt() { promptEl.textContent = promptStr(ctx.cwd); }
 
     function submit() {
       var cmd = inputEl.value;
-      append(promptStr(ctx.cwd) + ' ' + cmd);
+      append(promptStr(ctx.cwd) + cmd);
       inputEl.value = '';
       if (cmd.trim()) { ctx.history.push(cmd); }
       histIdx = ctx.history.length;
@@ -420,7 +474,7 @@ var Terminal = (function() {
         e.preventDefault();
         var r = complete(inputEl.value, ctx);
         if (!r) return;
-        if (r.options) { append(promptStr(ctx.cwd) + ' ' + inputEl.value); append(r.options.join('  ')); }
+        if (r.options) { append(promptStr(ctx.cwd) + inputEl.value); append(r.options.join('  ')); }
         inputEl.value = r.value;
       }
       else if (e.key === 'ArrowUp') {
@@ -433,10 +487,12 @@ var Terminal = (function() {
         inputEl.value = ctx.history[histIdx] || '';
       }
       else if (e.ctrlKey && e.key === 'l') { e.preventDefault(); outputEl.textContent = ''; }
-      else if (e.ctrlKey && e.key === 'c') { e.preventDefault(); append(promptStr(ctx.cwd) + ' ' + inputEl.value + '^C'); inputEl.value = ''; }
+      else if (e.ctrlKey && e.key === 'c') { e.preventDefault(); append(promptStr(ctx.cwd) + inputEl.value + '^C'); inputEl.value = ''; }
     });
 
-    win.querySelector('.term-body').addEventListener('click', function() { inputEl.focus(); });
+    scroller.addEventListener('click', function() {
+      if (!String(window.getSelection())) inputEl.focus();
+    });
     updatePrompt();
     inputEl.focus();
   }
