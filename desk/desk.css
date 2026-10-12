@@ -1,0 +1,270 @@
+/* desk.css — the page around the 3D desk: loader, HUD, info card, tooltip, hints. */
+
+@font-face {
+  font-family: 'Permanent Marker';
+  src: url('../assets/fonts/permanent-marker-latin-400-normal.woff2') format('woff2');
+  font-display: swap;
+}
+@font-face {
+  font-family: 'VT323';
+  src: url('../assets/fonts/vt323-latin-400-normal.woff2') format('woff2');
+  font-display: swap;
+}
+
+:root {
+  --ink: #f3efe6;
+  --ink-dim: rgba(243, 239, 230, 0.62);
+  --night: #0a0c12;
+  --paper: #fbf7ec;
+  --paper-ink: #1f2430;
+  --rule: rgba(60, 110, 200, 0.18);
+  --accent: #d9452b;
+  --duke: #012169;
+  --ui: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--night);
+  color: var(--ink);
+  font-family: var(--ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+#stage { position: fixed; inset: 0; touch-action: none; }
+#css, #gl { position: absolute; inset: 0; }
+#css { z-index: 0; }
+#gl { z-index: 1; pointer-events: none; width: 100%; height: 100%; display: block; }
+
+.vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+  transition: opacity 0.6s ease;
+}
+body[data-mode="screen"] .vignette { opacity: 0; }
+
+/* === Loader === */
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  transition: opacity 0.8s ease;
+}
+#loader.done { opacity: 0; pointer-events: none; }
+.ld-inner { text-align: center; font-family: 'VT323', monospace; color: #b8b8b8; }
+.ld-title { font-size: 34px; letter-spacing: 4px; color: #fff; margin-bottom: 14px; }
+.ld-bar { width: 220px; height: 14px; border: 2px solid #555; margin: 0 auto 12px; padding: 2px; }
+.ld-bar i { display: block; height: 100%; width: 100%; background: repeating-linear-gradient(90deg, #6fd0ff 0 10px, transparent 10px 13px); animation: ld 1.6s steps(16) infinite; transform-origin: left; }
+@keyframes ld { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+.ld-inner p { margin: 0; font-size: 20px; }
+
+/* === HUD === */
+#hud {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: max(14px, env(safe-area-inset-top)) 18px 0;
+  pointer-events: none;
+}
+#hud > * { pointer-events: auto; }
+.hud-left, .hud-right { display: flex; align-items: center; gap: 12px; }
+#brand {
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.2px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.6);
+  transition: opacity 0.4s;
+}
+#brand span { display: block; font-weight: 400; font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
+body[data-mode="screen"] #brand { opacity: 0; }
+
+#back, #plain-link, #mute {
+  font: 600 13px var(--ui);
+  color: var(--ink);
+  background: rgba(16, 18, 26, 0.62);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 999px;
+  padding: 8px 14px;
+  text-decoration: none;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, opacity 0.4s;
+}
+#back:hover, #plain-link:hover, #mute:hover { background: rgba(40, 44, 60, 0.85); }
+#back:focus-visible, #plain-link:focus-visible, #mute:focus-visible { outline: 2px solid #6fd0ff; outline-offset: 2px; }
+#back kbd {
+  font: 11px var(--ui);
+  margin-left: 6px;
+  padding: 1px 5px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  color: var(--ink-dim);
+}
+#mute { width: 36px; height: 36px; padding: 0; display: grid; place-items: center; }
+#mute svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+#mute .spk { fill: currentColor; }
+#mute .x { display: none; }
+#mute.muted .wave { display: none; }
+#mute.muted .x { display: inline; }
+
+/* While using the computer, the HUD steps out of the way (but comes back on hover). */
+body[data-mode="screen"] #hud { opacity: 0.18; transition: opacity 0.4s; }
+body[data-mode="screen"] #hud:hover, body[data-mode="screen"] #hud:focus-within, body.screen-ready #hud { opacity: 1; }
+body[data-mode="screen"] #back { background: rgba(10, 10, 14, 0.85); }
+
+/* === Prop navigation (keyboard / screen reader) === */
+#prop-nav {
+  position: fixed;
+  left: 18px;
+  bottom: 18px;
+  z-index: 11;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-width: 60vw;
+}
+#prop-nav button {
+  position: absolute;
+  width: 1px; height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  font: 600 13px var(--ui);
+  color: var(--paper-ink);
+  background: var(--paper);
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+#prop-nav button:focus { position: static; width: auto; height: auto; clip: auto; outline: 2px solid #6fd0ff; }
+
+/* === Tooltip & hint === */
+#tooltip {
+  position: fixed;
+  left: 0; top: 0;
+  z-index: 12;
+  pointer-events: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  background: rgba(10, 12, 18, 0.85);
+  color: var(--ink);
+  font-size: 12.5px;
+  white-space: nowrap;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+body[data-mode="screen"] #tooltip { display: none; }
+
+#hint {
+  position: fixed;
+  left: 50%;
+  bottom: max(22px, env(safe-area-inset-bottom));
+  z-index: 9;
+  margin: 0;
+  transform: translate(-50%, 10px);
+  max-width: calc(100vw - 32px);
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(10, 12, 18, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-size: 13.5px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.5s, transform 0.5s;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+#hint.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* === Info card: an index card pulled off the desk === */
+#card {
+  position: fixed;
+  z-index: 20;
+  width: min(380px, calc(100vw - 32px));
+  max-height: calc(100vh - 120px);
+  overflow: auto;
+  padding: 26px 26px 22px;
+  color: var(--paper-ink);
+  background:
+    linear-gradient(transparent 0 62px, rgba(217, 69, 43, 0.5) 62px 64px, transparent 64px),
+    repeating-linear-gradient(transparent 0 25px, var(--rule) 25px 26px),
+    var(--paper);
+  background-position: 0 0, 0 14px, 0 0;
+  border-radius: 4px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), 0 2px 0 rgba(0, 0, 0, 0.1);
+  transition: transform 0.45s cubic-bezier(.2,.8,.2,1), opacity 0.35s;
+  opacity: 0;
+}
+#card[data-side="right"] { right: 36px; top: 50%; transform: translate(30px, -50%) rotate(1.2deg); }
+#card[data-side="right"].open { opacity: 1; transform: translate(0, -50%) rotate(0.6deg); }
+#card[data-side="bottom"] { left: 50%; bottom: 16px; transform: translate(-50%, 30px); max-height: 46vh; }
+#card[data-side="bottom"].open { opacity: 1; transform: translate(-50%, 0); }
+.card-close {
+  position: absolute;
+  top: 10px; right: 12px;
+  width: 30px; height: 30px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: #6b6f7a;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+.card-close:hover { background: rgba(0, 0, 0, 0.06); color: var(--paper-ink); }
+.card-kicker {
+  margin: 0 0 6px;
+  font: 700 11px var(--ui);
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+.card-title {
+  margin: 0 0 16px;
+  font: 400 30px/1.05 'Permanent Marker', 'Comic Sans MS', cursive;
+  color: var(--duke);
+}
+.card-body p { margin: 0 0 12px; font-size: 15px; line-height: 26px; }
+.card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.card-btn {
+  font: 600 13.5px var(--ui);
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1.5px solid var(--paper-ink);
+  background: transparent;
+  color: var(--paper-ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.12s, background 0.2s;
+}
+.card-btn:hover { background: rgba(0, 0, 0, 0.05); transform: translateY(-1px); }
+.card-btn.primary { background: var(--duke); border-color: var(--duke); color: #fff; }
+.card-btn.primary:hover { background: #0a2f8a; }
+.card-btn:focus-visible { outline: 2px solid #6fd0ff; outline-offset: 2px; }
+
+/* === Flat mode (phones / no WebGL): the OS fills the screen === */
+body.flat #stage, body.flat #hud, body.flat .vignette, body.flat #hint, body.flat #card, body.flat #prop-nav, body.flat #tooltip { display: none; }
+#os-flat { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
+
+.noscript { position: fixed; inset: auto 0 40% 0; text-align: center; z-index: 200; }
+.noscript a { color: #6fd0ff; }
+
+@media (prefers-reduced-motion: reduce) {
+  #card, #hint, #loader, .vignette { transition: none; }
+  .ld-bar i { animation: none; }
+}

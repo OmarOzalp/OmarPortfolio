@@ -2,116 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1.0">
-  <title>OzalpOS</title>
-  <link rel="stylesheet" href="style.css">
-  <link rel="stylesheet" href="os.css">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,viewport-fit=cover">
+  <title>Omar Ozalp</title>
+  <meta name="description" content="Omar Ozalp: ECE, CS & Math at Duke. Step up to my desk and boot up OzalpOS 98.">
+  <meta name="theme-color" content="#0a0c12">
+  <link rel="stylesheet" href="desk/desk.css">
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "./vendor/three/three.module.js",
+        "three/addons/": "./vendor/three/addons/"
+      }
+    }
+  </script>
 </head>
-<body>
+<body data-mode="intro">
 
-  <!-- Boot Screen -->
-  <div id="boot">
-    <h1 id="boot-title">OzalpOS</h1>
-    <div class="boot-progress-track">
-      <div class="boot-progress-fill" id="boot-progress"></div>
+  <div id="loader" role="status" aria-live="polite">
+    <div class="ld-inner">
+      <div class="ld-title">OZ-PC 98</div>
+      <div class="ld-bar"><i></i></div>
+      <p>Warming up the CRT&hellip;</p>
     </div>
-    <p id="boot-status">Initializing...</p>
   </div>
 
-  <!-- Login Screen -->
-  <div id="login">
-    <p class="login-system-label">OzalpOS</p>
-    <h2 class="login-welcome">Welcome, User<span class="blink-cursor">█</span></h2>
-    <p class="login-hint">Click anywhere to enter</p>
-  </div>
+  <main id="stage" aria-label="Omar's desk">
+    <div id="css"></div>
+    <canvas id="gl" aria-hidden="true"></canvas>
+  </main>
+  <div class="vignette" aria-hidden="true"></div>
 
-  <!-- Desktop -->
-  <div id="desktop">
+  <header id="hud">
+    <div class="hud-left">
+      <button id="back" hidden>&larr; Back to desk <kbd>Esc</kbd></button>
+      <div id="brand">Omar Ozalp<span>ECE &middot; CS &middot; Math @ Duke</span></div>
+    </div>
+    <div class="hud-right">
+      <a id="plain-link" href="plain.html">Plain version</a>
+      <button id="mute" aria-label="Mute"><svg viewBox="0 0 24 24" aria-hidden="true"><path class="spk" d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="x" d="M16 9l6 6M22 9l-6 6"/></svg></button>
+    </div>
+  </header>
 
-    <header id="menubar" aria-label="Menu bar">
-      <span class="menubar-brand">OzalpOS</span>
-      <span class="menubar-item">Finder</span>
-      <span class="menubar-item">File</span>
-      <span class="menubar-item">Edit</span>
-      <span class="menubar-item">View</span>
-      <span class="menubar-item">Window</span>
-      <span class="menubar-item">Help</span>
-      <span class="menubar-spacer"></span>
-      <span id="menubar-clock" aria-live="off"></span>
-    </header>
+  <nav id="prop-nav" aria-label="Things on the desk"></nav>
 
-    <main id="desktop-bg"></main>
+  <div id="tooltip" hidden></div>
+  <p id="hint" aria-live="polite"></p>
 
-    <nav id="dock" aria-label="Dock">
-      <div class="dock-inner">
+  <aside id="card" hidden aria-live="polite">
+    <button class="card-close" aria-label="Put it back">&times;</button>
+    <p class="card-kicker"></p>
+    <h2 class="card-title"></h2>
+    <div class="card-body"></div>
+    <div class="card-actions"></div>
+  </aside>
 
-        <div class="dock-item" role="button" aria-label="About" tabindex="0">
-          <div class="dock-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8" r="4"/>
-              <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-            </svg>
-          </div>
-          <span class="dock-label">About</span>
-        </div>
+  <noscript>
+    <p class="noscript">This desk needs JavaScript. The <a href="plain.html">plain version</a> doesn't.</p>
+  </noscript>
 
-        <div class="dock-item" role="button" aria-label="Experience" tabindex="0">
-          <div class="dock-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="2" y="7" width="20" height="14" rx="2"/>
-              <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-            </svg>
-          </div>
-          <span class="dock-label">Experience</span>
-        </div>
-
-        <div class="dock-item" role="button" aria-label="Projects" tabindex="0">
-          <div class="dock-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/>
-            </svg>
-          </div>
-          <span class="dock-label">Projects</span>
-        </div>
-
-        <div class="dock-item" role="button" aria-label="Finder" tabindex="0">
-          <div class="dock-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            </svg>
-          </div>
-          <span class="dock-label">Finder</span>
-        </div>
-
-        <div class="dock-item" role="button" aria-label="Terminal" tabindex="0">
-          <div class="dock-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <rect x="2" y="3" width="20" height="18" rx="2"/>
-              <path d="M7 9l3 3-3 3M12 15h5"/>
-            </svg>
-          </div>
-          <span class="dock-label">Terminal</span>
-        </div>
-
-        <div class="dock-item" role="button" aria-label="Settings" tabindex="0">
-          <div class="dock-icon">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-          </div>
-          <span class="dock-label">Settings</span>
-        </div>
-
-      </div>
-    </nav>
-
-  </div>
-
-  <script src="settings.js" defer></script>
-  <script src="fs.js" defer></script>
-  <script src="terminal.js" defer></script>
-  <script src="windows.js" defer></script>
-  <script src="os.js" defer></script>
+  <script src="os/sound.js"></script>
+  <script src="os/fs.js"></script>
+  <script type="module" src="desk/main.js"></script>
 </body>
 </html>
