@@ -61,7 +61,11 @@ async function start3D() {
 
   const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.01, 30);
 
-  // CSS3D layer with the OS iframe, aligned to the screen mesh.
+  // CSS3D layer with the OS iframe, aligned to the screen mesh. The CSS world is the 3D world scaled
+  // up (meters -> millimeters): the projection is identical, but browsers hit-test transformed iframes
+  // reliably only when the element isn't a fraction of a CSS pixel from the virtual camera.
+  const CSS_SCALE = 1000;
+  const cssCamera = new THREE.PerspectiveCamera(camera.fov, camera.aspect, camera.near * CSS_SCALE, camera.far * CSS_SCALE);
   const cssRenderer = new CSS3DRenderer({ element: $('css') });
   cssRenderer.setSize(window.innerWidth, window.innerHeight);
   const cssScene = new THREE.Scene();
@@ -77,9 +81,9 @@ async function start3D() {
   iframe.style.pointerEvents = 'none';
   scene.updateMatrixWorld(true);
   const hole = parts.screen.hole;
-  hole.getWorldPosition(cssObj.position);
+  hole.getWorldPosition(cssObj.position).multiplyScalar(CSS_SCALE);
   hole.getWorldQuaternion(cssObj.quaternion);
-  cssObj.scale.setScalar(parts.screen.width / OS_W);
+  cssObj.scale.setScalar((parts.screen.width * CSS_SCALE) / OS_W);
   cssScene.add(cssObj);
 
   /* ---------- props + picking ---------- */
@@ -243,8 +247,12 @@ async function start3D() {
   function liftFor(id) { return id === 'pennant' ? 0 : 0.03; }
 
   /* ---------- OS bridge ---------- */
+  // Messages sent before the OS has finished loading are queued and delivered on 'ready'.
+  let osLive = false;
+  const pending = [];
   function post(msg) {
     msg.ozalp = true;
+    if (!osLive) { pending.push(msg); return; }
     try { iframe.contentWindow.postMessage(msg, location.origin); } catch (e) {}
   }
 
@@ -267,7 +275,11 @@ async function start3D() {
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || !e.data.ozalp) return;
     const d = e.data;
-    if (d.type === 'ready') { osReady = true; maybeReveal(); }
+    if (d.type === 'ready') {
+      osReady = osLive = true;
+      pending.splice(0).forEach(post);
+      maybeReveal();
+    }
     else if (d.type === 'state') osState = d.state;
     else if (d.type === 'exit' && mode === 'screen') goOverview();
     else if (d.type === 'shutdown' && mode === 'screen') goOverview();
@@ -421,8 +433,9 @@ async function start3D() {
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h);
     cssRenderer.setSize(w, h);
-    camera.aspect = w / h;
+    camera.aspect = cssCamera.aspect = w / h;
     camera.updateProjectionMatrix();
+    cssCamera.updateProjectionMatrix();
     if (mode === 'screen') snapTo(screenView());
     else if (mode === 'prop' && focused) { snapTo(propView(focused)); card.dataset.side = cardSide(); }
     else if (mode === 'overview') snapTo(overviewView());
@@ -547,7 +560,10 @@ async function start3D() {
     }
     camera.updateMatrixWorld();
     if (!lastCam.equals(camera.matrixWorld) || cam.tween) {
-      cssRenderer.render(cssScene, camera);
+      cssCamera.position.copy(camera.position).multiplyScalar(CSS_SCALE);
+      cssCamera.quaternion.copy(camera.quaternion);
+      cssCamera.updateMatrixWorld();
+      cssRenderer.render(cssScene, cssCamera);
       lastCam.copy(camera.matrixWorld);
     }
   }
