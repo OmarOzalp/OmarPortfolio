@@ -1,0 +1,335 @@
+/* solitaire.css — Klondike Solitaire for OzalpOS 98 (see solitaire.js).
+   Card geometry comes from CSS variables that solitaire.js sets on .sol-board:
+   --sol-cw / --sol-ch card size, --sol-fs corner index size, --sol-r corner radius,
+   --sol-pip / --sol-ace / --sol-ace2 / --sol-mid suit sizes, and --sol-px / --sol-pt /
+   --sol-cl / --sol-cc / --sol-cs for the court-card panel. */
+
+.window-body.sol-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.sol {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* === The felt === */
+.sol-board {
+  --sol-cw: 71px;
+  --sol-ch: 96px;
+  --sol-fs: 12px;
+  --sol-r: 5px;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  touch-action: none;
+  outline: none;
+  cursor: default;
+  background-color: #008a00;
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.22 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse 75% 65% at 50% 38%, rgba(255, 255, 255, 0.07), transparent 72%),
+    linear-gradient(transparent 55%, rgba(0, 0, 0, 0.14));
+}
+.sol-status .sol-score,
+.sol-status .sol-time { flex: 0 0 auto; min-width: 84px; }
+
+/* Empty pile outlines */
+.sol-slot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--sol-cw);
+  height: var(--sol-ch);
+  border-radius: var(--sol-r);
+  background: rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(0, 30, 0, 0.7), inset 1px 1px 0 1px rgba(255, 255, 255, 0.07);
+}
+.sol-slot-found::after {
+  content: 'A';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: bold calc(var(--sol-cw) * 0.42) / 1 Georgia, 'Times New Roman', serif;
+  color: rgba(0, 0, 0, 0.2);
+}
+/* The stock's "recycle" ring: click it to turn the waste back over. */
+.sol-slot-stock::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--sol-cw) * 0.46);
+  height: calc(var(--sol-cw) * 0.46);
+  margin: calc(var(--sol-cw) * -0.23) 0 0 calc(var(--sol-cw) * -0.23);
+  border: calc(var(--sol-cw) * 0.075) solid #5be35b;
+  border-radius: 50%;
+  opacity: 0.9;
+}
+.sol-slot-stock.sol-none::after { opacity: 0.25; }
+
+/* Zero-size wrapper so it never blocks clicks on the slots underneath. */
+.sol-cards {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* === Cards === */
+.sol-card {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--sol-cw);
+  height: var(--sol-ch);
+}
+.sol-card.sol-anim { transition: transform 0.18s ease-out; }
+.sol-card.sol-gone { visibility: hidden; }
+.sol-in {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  border: 1px solid #000;
+  border-radius: var(--sol-r);
+  overflow: hidden;
+}
+.sol-card.sol-lift .sol-in { box-shadow: 3px 4px 0 rgba(0, 0, 0, 0.28); }
+.sol-card.sol-flipping .sol-in { animation: sol-flip 0.16s ease-out; }
+@keyframes sol-flip {
+  from { transform: scaleX(0.06); }
+  to   { transform: scaleX(1); }
+}
+
+.sol-red { color: #d00; }
+.sol-blk { color: #000; }
+.sol-card svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  fill: currentColor;
+}
+.sol-face {
+  position: absolute;
+  inset: 0;
+}
+.sol-card:not(.sol-up) .sol-face,
+.sol-card.sol-up .sol-back { display: none; }
+
+/* Corner indices: rank over suit, repeated upside down in the bottom-right corner. */
+.sol-idx {
+  position: absolute;
+  left: 1px;
+  top: 2px;
+  width: calc(var(--sol-fs) * 1.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  font: bold var(--sol-fs) / 1 Arial, Helvetica, sans-serif;
+}
+.sol-idx b { font-weight: bold; white-space: nowrap; }
+.sol-idx .sol-ten { letter-spacing: -0.08em; }
+.sol-card .sol-idx svg {
+  width: calc(var(--sol-fs) * 0.78);
+  height: calc(var(--sol-fs) * 0.78);
+  margin-top: 1px;
+}
+.sol-idx.sol-br {
+  left: auto;
+  top: auto;
+  right: 1px;
+  bottom: 2px;
+  transform: rotate(180deg);
+}
+
+/* Number cards: classic pip layouts, or one big pip when the cards get small. */
+.sol-pip {
+  position: absolute;
+  width: var(--sol-pip);
+  height: var(--sol-pip);
+  margin: calc(var(--sol-pip) / -2) 0 0 calc(var(--sol-pip) / -2);
+}
+.sol-pip.sol-rot svg { transform: rotate(180deg); }
+.sol-ace,
+.sol-mid {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--sol-ace);
+  height: var(--sol-ace);
+  margin: calc(var(--sol-ace) / -2) 0 0 calc(var(--sol-ace) / -2);
+}
+.sol-ace-big { --sol-ace: var(--sol-ace2); }
+.sol-mid { --sol-ace: var(--sol-mid); display: none; top: 55%; }
+.sol-board.sol-small .sol-pips { display: none; }
+.sol-board.sol-small .sol-mid { display: block; }
+
+/* Court cards: a framed panel with a little crown, the big letter and the suit. */
+.sol-court {
+  position: absolute;
+  left: var(--sol-px);
+  right: var(--sol-px);
+  top: var(--sol-pt);
+  bottom: var(--sol-pt);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 1px solid currentColor;
+  box-shadow: inset 0 0 0 1px #fff;
+  background: linear-gradient(#fffbea, #f3dc94);
+}
+.sol-court b { font: bold var(--sol-cl) / 1 Georgia, 'Times New Roman', serif; }
+.sol-card .sol-court > svg:last-child {
+  width: var(--sol-cs);
+  height: var(--sol-cs);
+}
+.sol-card .sol-court .sol-crown {
+  width: var(--sol-cc);
+  height: calc(var(--sol-cc) * 0.625);
+  fill: #e8b923;
+  stroke: #5c4300;
+  stroke-width: 1.3;
+  stroke-linejoin: round;
+}
+
+/* === Card backs (CSS only). The board, or a Deck dialog preview, carries data-sol-back. === */
+.sol-back {
+  position: absolute;
+  inset: calc(var(--sol-cw) * 0.045);
+  border-radius: max(1px, calc(var(--sol-r) - 2px));
+  overflow: hidden;
+}
+.sol-back::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+}
+
+/* Deep Dive: sunlit water fading to the deep, fish-scale waves, bubbles and a diver-down flag. */
+[data-sol-back="dive"] .sol-back {
+  background:
+    radial-gradient(circle calc(var(--sol-cw) * 0.05) at 22% 30%, rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0.85) 62% 80%, transparent 88%),
+    radial-gradient(circle calc(var(--sol-cw) * 0.032) at 31% 19%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.8) 58% 80%, transparent 88%),
+    radial-gradient(circle calc(var(--sol-cw) * 0.02) at 25% 11%, rgba(255, 255, 255, 0.75) 70%, transparent 85%),
+    radial-gradient(circle calc(var(--sol-cw) * 0.045) at 76% 70%, rgba(255, 255, 255, 0.15) 55%, rgba(255, 255, 255, 0.8) 62% 80%, transparent 88%),
+    radial-gradient(circle calc(var(--sol-cw) * 0.028) at 69% 81%, rgba(255, 255, 255, 0.15) 50%, rgba(255, 255, 255, 0.75) 58% 80%, transparent 88%),
+    radial-gradient(circle calc(var(--sol-cw) * 0.018) at 78% 90%, rgba(255, 255, 255, 0.7) 70%, transparent 85%),
+    radial-gradient(circle at 50% 100%, transparent calc(var(--sol-cw) * 0.075), rgba(255, 255, 255, 0.22) calc(var(--sol-cw) * 0.075) calc(var(--sol-cw) * 0.095), transparent calc(var(--sol-cw) * 0.1))
+      0 0 / calc(var(--sol-cw) * 0.2) calc(var(--sol-cw) * 0.1),
+    radial-gradient(circle at 50% 100%, transparent calc(var(--sol-cw) * 0.075), rgba(255, 255, 255, 0.22) calc(var(--sol-cw) * 0.075) calc(var(--sol-cw) * 0.095), transparent calc(var(--sol-cw) * 0.1))
+      calc(var(--sol-cw) * 0.1) calc(var(--sol-cw) * 0.05) / calc(var(--sol-cw) * 0.2) calc(var(--sol-cw) * 0.1),
+    linear-gradient(170deg, #4cc3ef 0%, #1677b8 45%, #08386a 100%);
+  box-shadow: inset 0 0 0 1px rgba(0, 20, 60, 0.6);
+}
+[data-sol-back="dive"] .sol-back::after {
+  width: calc(var(--sol-cw) * 0.34);
+  height: calc(var(--sol-cw) * 0.24);
+  transform: translate(-50%, -50%);
+  background: linear-gradient(to top right, #e01b1b 40%, #fff 40% 60%, #e01b1b 60%);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 0 2px rgba(0, 30, 70, 0.45);
+}
+
+/* Duke Blue: navy with a white diagonal weave, a pinstripe frame and a diamond. */
+[data-sol-back="duke"] .sol-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.6) 0 1px, transparent 1px calc(var(--sol-cw) * 0.08)),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px calc(var(--sol-cw) * 0.08)),
+    #012169;
+  box-shadow: inset 0 0 0 calc(var(--sol-cw) * 0.045) #012169, inset 0 0 0 calc(var(--sol-cw) * 0.045 + 1px) rgba(255, 255, 255, 0.9);
+}
+[data-sol-back="duke"] .sol-back::after {
+  width: calc(var(--sol-cw) * 0.24);
+  height: calc(var(--sol-cw) * 0.24);
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: #012169;
+  box-shadow: 0 0 0 1px #fff, 0 0 0 3px #012169, 0 0 0 4px rgba(255, 255, 255, 0.75);
+}
+
+/* Classic Red: the lattice everybody remembers. */
+[data-sol-back="red"] .sol-back {
+  background:
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.7) 0 1px, transparent 1px calc(var(--sol-cw) * 0.085)),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.7) 0 1px, transparent 1px calc(var(--sol-cw) * 0.085)),
+    radial-gradient(ellipse at 50% 45%, #e22a2a, #a50c0c);
+  box-shadow: inset 0 0 0 1px #6e0000, inset 0 0 0 calc(var(--sol-cw) * 0.04) #b81414, inset 0 0 0 calc(var(--sol-cw) * 0.04 + 1px) rgba(255, 255, 255, 0.8);
+}
+[data-sol-back="red"] .sol-back::after { display: none; }
+
+/* Sketchbook: cream paper, loose pencil hatching that cross-hatches into shade toward one
+   corner, a double sketched frame and a doodled monogram. */
+[data-sol-back="sketch"] .sol-back {
+  background:
+    radial-gradient(circle calc(var(--sol-cw) * 0.22) at 50% 50%, #f6efdc 83%, rgba(60, 60, 68, 0.65) 86% 90%, transparent 93%),
+    repeating-linear-gradient(41deg, rgba(55, 55, 65, 0.34) 0 0.6px, transparent 0.8px 4.2px),
+    repeating-linear-gradient(46deg, rgba(55, 55, 65, 0.16) 0 0.5px, transparent 0.7px 6.6px),
+    linear-gradient(135deg, #f6efdc 30%, rgba(246, 239, 220, 0) 75%),
+    repeating-linear-gradient(-48deg, rgba(55, 55, 65, 0.3) 0 0.6px, transparent 0.8px 3.6px),
+    #f6efdc;
+  box-shadow: inset 0 0 0 1px rgba(60, 60, 65, 0.7), inset 0 0 0 3px #f6efdc, inset 0 0 0 3.6px rgba(60, 60, 65, 0.35);
+}
+[data-sol-back="sketch"] .sol-back::after {
+  content: 'Oz';
+  transform: translate(-50%, -52%) rotate(-8deg);
+  font: italic calc(var(--sol-cw) * 0.22) / 1 'Segoe Print', 'Bradley Hand', 'Chalkboard SE', 'Comic Sans MS', cursive;
+  color: rgba(50, 50, 60, 0.8);
+  white-space: nowrap;
+}
+
+/* Win cascade canvas */
+.sol-fx {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9000;
+  pointer-events: none;
+}
+
+/* === Game > Deck... dialog === */
+.sol-deck-label { margin-bottom: 8px; }
+.sol-deck-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 4px;
+}
+.sol-deck-opt {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 2px 3px;
+  border: 0;
+  background: none;
+  cursor: default;
+  outline: none;
+}
+.sol-deck-card {
+  --sol-cw: 52px;
+  --sol-r: 4px;
+  position: relative;
+  display: block;
+  width: 52px;
+  height: 70px;
+  background: #fff;
+  border: 1px solid #000;
+  border-radius: 4px;
+}
+.sol-deck-opt.sel .sol-deck-card { outline: 2px solid var(--select-bg); outline-offset: 2px; }
+.sol-deck-name { padding: 1px 3px; white-space: nowrap; border: 1px dotted transparent; }
+.sol-deck-opt.sel .sol-deck-name { background: var(--select-bg); color: var(--select-fg); }
+.sol-deck-opt:focus-visible .sol-deck-name { border-color: #000; }
+
+@media (prefers-reduced-motion: reduce) {
+  .sol-card.sol-anim { transition-duration: 0.01s; }
+  .sol-card.sol-flipping .sol-in { animation: none; }
+}
