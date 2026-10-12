@@ -90,7 +90,7 @@ body[data-mode="screen"] .vignette { opacity: 0; }
   transition: opacity 0.4s;
 }
 #brand span { display: block; font-weight: 400; font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
-body[data-mode="screen"] #brand { opacity: 0; }
+body[data-mode="screen"] #brand { display: none; }
 
 #back, #plain-link, #mute {
   font: 600 13px var(--ui);

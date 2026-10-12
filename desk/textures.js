@@ -226,12 +226,13 @@ export function pennantTexture() {
   speckle(ctx, W, H, 12000, ['rgba(255,255,255,0.05)', 'rgba(0,0,0,0.12)'], rand, 2);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, 70, H);
-  ctx.font = 'italic 900 170px Georgia, "Times New Roman", serif';
+  // The pennant narrows to the right, so the lettering stays left and near the middle.
+  ctx.font = 'italic 900 156px Georgia, "Times New Roman", serif';
   ctx.textBaseline = 'middle';
   ctx.fillStyle = '#fff';
-  ctx.fillText('DUKE', 130, H / 2 + 6);
-  ctx.font = '700 40px Georgia, serif';
-  ctx.fillText('BLUE DEVILS', 140, H / 2 + 112);
+  ctx.fillText('DUKE', 120, H / 2 - 18);
+  ctx.font = '700 34px Georgia, serif';
+  ctx.fillText('BLUE DEVILS', 132, H / 2 + 72);
   return toTexture(c);
 }
 

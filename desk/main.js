@@ -139,7 +139,10 @@ async function start3D() {
     const c = new THREE.Vector3(), n = new THREE.Vector3(0, 0, 1);
     hole.getWorldPosition(c);
     n.applyQuaternion(hole.getWorldQuaternion(new THREE.Quaternion()));
-    const d = Math.max((parts.screen.height / 2) / vfovTan(), (parts.screen.width / 2) / hfovTan()) * 1.035;
+    // Leave a strip of bezel above and below the screen for the HUD buttons, so they never cover the OS.
+    const fitH = 1 - Math.min(0.3, 128 / window.innerHeight);
+    const fitW = 1 - Math.min(0.1, 24 / window.innerWidth);
+    const d = Math.max((parts.screen.height / 2) / (vfovTan() * fitH), (parts.screen.width / 2) / (hfovTan() * fitW));
     return { pos: c.clone().addScaledVector(n, d), target: c };
   }
 
