@@ -73,8 +73,11 @@ function prop(id, group) {
 // The back wall sits at WALL_Z with a real opening for the window, so sunlight can pour through it
 // onto the desk. The beach outside is a big painted plane set back from the wall, so it shifts with the
 // camera like a real view would.
-const WALL_Z = -0.55;
-const WINDOW = { cx: -0.9, cy: 1.43, w: 0.86, h: 0.74 };
+export const WALL_Z = -0.55;
+export const WINDOW = { cx: -0.9, cy: 1.43, w: 0.86, h: 0.74 };
+// Direction the afternoon sunlight travels (into the room, through the window). The beach outside uses the
+// same sun, so the light on the desk and the view out the window agree.
+export const SUN_DIR = new THREE.Vector3(0.95, -1.7, 1.5).normalize();
 const RAIL_Y = 0.95;
 const CEILING_Y = 2.7;
 
@@ -83,7 +86,8 @@ function buildRoom(scene, parts) {
   const { cx, cy, w: W, h: H } = WINDOW;
   const x0 = cx - W / 2, x1 = cx + W / 2, y0 = cy - H / 2, y1 = cy + H / 2;
 
-  scene.add(mesh(new THREE.PlaneGeometry(10, 10), std(0xffffff, { map: TX.floorTexture(), roughness: 0.85 }), [0, 0, 0], [-Math.PI / 2, 0, 0], { cast: false }));
+  // The floor stops at the wall so it never shows through the window.
+  scene.add(mesh(new THREE.PlaneGeometry(10, 6), std(0xffffff, { map: TX.floorTexture(), roughness: 0.85 }), [0, 0, wallZ + 3], [-Math.PI / 2, 0, 0], { cast: false }));
   // Ceiling: barely on screen, but it keeps the sun from spilling over the top of the wall.
   scene.add(mesh(new THREE.PlaneGeometry(8, 4), std(0xf6f1e8, { roughness: 0.9 }), [0, CEILING_Y, 1.45], [Math.PI / 2, 0, 0], { receive: false }));
 
@@ -132,10 +136,17 @@ function buildRoom(scene, parts) {
   win.add(mesh(new THREE.BoxGeometry(S, H, 0.03), trim, [x1 - S / 2, cy, sashZ]));
   win.add(mesh(new THREE.BoxGeometry(0.022, H, 0.025), trim, [cx, cy, sashZ]));
   win.add(mesh(new THREE.BoxGeometry(W, 0.022, 0.025), trim, [cx, cy + 0.04, sashZ]));
-  const glass = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.05, roughness: 0.05, depthWrite: false }));
-  glass.position.set(cx, cy, sashZ - 0.005);
-  win.add(glass);
   scene.add(win);
+  // Portal: an invisible pane just behind the sash. It marks the stencil buffer wherever the window is
+  // visible (and not covered by the frame, curtains or anything else in the room); the beach is then drawn
+  // only there (desk/outdoor.js, rendered by main.js).
+  const portal = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({
+    colorWrite: false, depthWrite: false,
+    stencilWrite: true, stencilRef: 1, stencilFunc: THREE.AlwaysStencilFunc, stencilZPass: THREE.ReplaceStencilOp
+  }));
+  portal.position.set(cx, cy, sashZ - 0.03);
+  portal.renderOrder = 999;
+  scene.add(portal);
 
   // A little succulent on the sill.
   const plant = new THREE.Group();
@@ -151,11 +162,6 @@ function buildRoom(scene, parts) {
   plant.position.set(x1 - 0.12, y0, wallZ + 0.06);
   scene.add(plant);
 
-  // Outside: golden hour at the beach.
-  const beach = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.7), new THREE.MeshBasicMaterial({ map: TX.beachTexture(), toneMapped: false, fog: false }));
-  beach.position.set(cx, 1.43, wallZ - 1.4);
-  scene.add(beach);
-
   // Linen curtains pulled to the sides, on a rod.
   const linen = std(0xfff8ec, { roughness: 0.95, side: THREE.DoubleSide });
   [x0 - 0.09, x1 + 0.09].forEach((x, i) => {
@@ -167,7 +173,6 @@ function buildRoom(scene, parts) {
   });
   win.add(mesh(new THREE.CylinderGeometry(0.008, 0.008, W + 0.62, 12), std(0x2a2a2a, { metalness: 0.6, roughness: 0.4 }), [cx, y1 + 0.13, wallZ + 0.07], [0, 0, Math.PI / 2]));
   [x0 - 0.31, x1 + 0.31].forEach((x) => win.add(mesh(new THREE.SphereGeometry(0.016, 14, 10), std(0x2a2a2a, { metalness: 0.6, roughness: 0.4 }), [x, y1 + 0.13, wallZ + 0.07])));
-  glass.castShadow = false;
 
   // Duke pennant, above the monitor.
   const pen = new THREE.Group();
@@ -722,43 +727,147 @@ function buildMask(scene) {
   scene.add(prop('mask', holder));
 }
 
-/* ---------------- wrestling headgear (stand-in) ---------------- */
-function buildHeadgear(scene) {
-  const g = new THREE.Group();
-  const shellMat = std(0x0b2a8a, { roughness: 0.32 });
-  const strapMat = std(0x121316, { roughness: 0.7 });
-  const pts = [new THREE.Vector2(0, 0.03), new THREE.Vector2(0.026, 0.027), new THREE.Vector2(0.044, 0.018), new THREE.Vector2(0.054, 0.006), new THREE.Vector2(0.057, 0)];
-  const cupGeo = new THREE.LatheGeometry(pts, 36);
-  const ventMat = std(0x050608, { roughness: 0.8 });
-  [-1, 1].forEach((sx) => {
-    const cup = new THREE.Group();
-    cup.add(mesh(cupGeo, shellMat));
-    cup.add(mesh(new THREE.TorusGeometry(0.052, 0.009, 10, 36), std(0x2a2d33, { roughness: 0.9 }), [0, -0.004, 0], [Math.PI / 2, 0, 0]));
-    // Vent holes around the dome, each turned to face along the surface normal.
-    for (let i = 0; i < 6; i++) {
-      const a = (i / 6) * Math.PI * 2;
-      const v = mesh(new THREE.CircleGeometry(0.006, 12), ventMat, [Math.cos(a) * 0.025, 0.0272, Math.sin(a) * 0.025], null, { cast: false });
-      v.scale.set(1, 1.6, 1);
-      v.lookAt(Math.cos(a) * 0.045, 0.06, Math.sin(a) * 0.045);
-      cup.add(v);
+/* ---------------- wrestling headgear ---------------- */
+// Two closed ear-guard shells (dome, rubber rim, foam backing, vents) held in the shape of a head by flat
+// webbing straps: crown, rear and chin, with snaps, a rear buckle and a chin cup. The straps follow an
+// imaginary head (an ellipsoid), so the headgear keeps its worn shape sitting on the desk.
+const HEAD = { rx: 0.079, ry: 0.115, rz: 0.1 };
+
+function headPoint(dir, out = 0.004) {
+  // Point on the head ellipsoid along a direction, pushed out by `out`.
+  const d = dir.clone().normalize();
+  const k = 1 / Math.sqrt((d.x / HEAD.rx) ** 2 + (d.y / HEAD.ry) ** 2 + (d.z / HEAD.rz) ** 2);
+  const p = d.multiplyScalar(k);
+  return p.add(headNormal(p).multiplyScalar(out));
+}
+function headNormal(p) {
+  return new THREE.Vector3(p.x / HEAD.rx ** 2, p.y / HEAD.ry ** 2, p.z / HEAD.rz ** 2).normalize();
+}
+
+// A strap: a band with a real rectangular cross-section lying flat on the head surface.
+function strapGeometry(points, width = 0.026, thick = 0.003) {
+  const curve = new THREE.CatmullRomCurve3(points);
+  const n = 64;
+  const pos = [], uv = [], idx = [];
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const p = curve.getPointAt(t), tan = curve.getTangentAt(t);
+    const nrm = headNormal(p);
+    const side = new THREE.Vector3().crossVectors(nrm, tan).normalize().multiplyScalar(width / 2);
+    const up = nrm.clone().multiplyScalar(thick);
+    [[1, 0], [1, 1], [-1, 1], [-1, 0]].forEach(([sx, top]) => {
+      const q = p.clone().addScaledVector(side, sx).add(up.clone().multiplyScalar(top));
+      pos.push(q.x, q.y, q.z);
+      uv.push(t * curve.getLength() * 12, sx > 0 ? 1 : 0);
+    });
+  }
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < 4; k++) {
+      const a = i * 4 + k, b = i * 4 + ((k + 1) % 4), c = a + 4, d = b + 4;
+      idx.push(a, c, b, b, c, d);
     }
-    cup.add(mesh(new THREE.CircleGeometry(0.008, 16), ventMat, [0, 0.0302, 0], [-Math.PI / 2, 0, 0], { cast: false }));
-    cup.rotation.z = -sx * Math.PI / 2;
-    cup.position.set(sx * 0.085, 0, 0);
-    g.add(cup);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+function webbingTexture() {
+  const c = document.createElement('canvas');
+  c.width = 128; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#18191c';
+  ctx.fillRect(0, 0, 128, 64);
+  ctx.fillStyle = 'rgba(255,255,255,0.05)';
+  for (let x = 0; x < 128; x += 4) ctx.fillRect(x, 0, 2, 64);
+  ctx.fillStyle = '#6b6f78';
+  for (let x = 0; x < 128; x += 12) { ctx.fillRect(x, 7, 7, 3); ctx.fillRect(x, 54, 7, 3); }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  t.anisotropy = 8;
+  return t;
+}
+
+function earGuard(shellMat, rimMat, foamMat, ventMat, snapMat) {
+  const g = new THREE.Group();
+  // Dome profile (radius, height) from the crown of the dome out to a small lip.
+  const prof = [[0, 0.03], [0.012, 0.0295], [0.024, 0.027], [0.035, 0.0215], [0.044, 0.0145], [0.05, 0.007], [0.054, 0.001], [0.055, -0.003]]
+    .map(([r, h]) => new THREE.Vector2(r, h));
+  const shell = mesh(new THREE.LatheGeometry(prof, 48), shellMat);
+  g.add(shell);
+  // Closed back: a foam pad behind the shell so you can never look into it.
+  g.add(mesh(new THREE.CylinderGeometry(0.054, 0.05, 0.012, 48), foamMat, [0, -0.009, 0]));
+  g.add(mesh(new THREE.TorusGeometry(0.0545, 0.0042, 10, 48), rimMat, [0, -0.002, 0], [Math.PI / 2, 0, 0]));
+  // Vents: dark recessed slots, closed shapes sunk into the dome.
+  const vent = new THREE.SphereGeometry(1, 16, 10);
+  const vents = [[0, 0, 0.007, 0.009]];
+  for (let i = 0; i < 6; i++) {
+    const a = (i / 6) * Math.PI * 2 + 0.26;
+    vents.push([Math.cos(a) * 0.026, Math.sin(a) * 0.026, 0.0045, 0.0105, a]);
+  }
+  vents.forEach(([x, z, w, l, a = 0]) => {
+    const r = Math.hypot(x, z);
+    const h = 0.03 - r * r * 4.6;                  // roughly on the dome surface
+    const v = mesh(vent, ventMat, [x, h - 0.0021, z], null, { cast: false });
+    v.scale.set(w, 0.0026, l);
+    v.rotation.y = -a;
+    g.add(v);
   });
-  // Straps are tori flattened into wide bands.
-  const strap = (radius, rx, arc = Math.PI) => {
-    const geo = new THREE.TorusGeometry(radius, 0.004, 6, 40, arc);
-    geo.scale(1, 1, 4.5);
-    return mesh(geo, strapMat, null, [rx, 0, 0]);
-  };
-  g.add(strap(0.085, 0));
-  g.add(strap(0.085, -0.9));
-  const chin = mesh(new THREE.TorusGeometry(0.085, 0.004, 6, 40, Math.PI), strapMat, null, [Math.PI + 0.75, 0, 0]);
-  chin.geometry.scale(1, 1, 3.5);
-  g.add(chin);
-  g.rotation.set(0, Math.PI / 2 - 0.55, 0.05);
+  // Snaps where the straps attach.
+  [[0, 0.043], [0.04, -0.018], [-0.03, -0.034]].forEach(([x, z]) => {
+    g.add(mesh(new THREE.CylinderGeometry(0.0045, 0.0045, 0.003, 16), snapMat, [x, 0.0125 - (x * x + z * z) * 4.6 + 0.003, z], null, { cast: false }));
+  });
+  return g;
+}
+
+function buildHeadgear(scene) {
+  const shellMat = new THREE.MeshPhysicalMaterial({ color: 0x0c2d8f, roughness: 0.3, clearcoat: 0.7, clearcoatRoughness: 0.25, side: THREE.DoubleSide });
+  const rimMat = std(0x111215, { roughness: 0.75 });
+  const foamMat = std(0x26282d, { roughness: 0.95 });
+  const ventMat = std(0x050506, { roughness: 0.9 });
+  const snapMat = std(0xc7ccd2, { metalness: 1, roughness: 0.3 });
+  const strapMat = new THREE.MeshStandardMaterial({ map: webbingTexture(), roughness: 0.85, side: THREE.DoubleSide });
+
+  const g = new THREE.Group();
+  // Ear guards sit over the ears, slightly forward and down, facing outward.
+  [-1, 1].forEach((sx) => {
+    const ear = earGuard(shellMat, rimMat, foamMat, ventMat, snapMat);
+    ear.scale.set(1, 1, 1.22);                    // taller than wide
+    ear.rotation.set(0, 0, -sx * Math.PI / 2);
+    ear.position.set(sx * (HEAD.rx + 0.012), -0.012, 0.006);
+    g.add(ear);
+  });
+
+  const V = (x, y, z) => new THREE.Vector3(x, y, z);
+  const arc = (from, to, steps, f) => Array.from({ length: steps + 1 }, (_, i) => f(from + (to - from) * (i / steps)));
+  // Crown strap: ear top, over the top of the head, leaning back a little.
+  const crown = arc(-1.25, 1.25, 16, (a) => headPoint(V(Math.sin(a), Math.cos(a), -0.28)));
+  // Rear strap: around the back of the head, low.
+  const rear = arc(-1.35, 1.35, 16, (a) => headPoint(V(Math.sin(a) * 1.0, 0.18, -Math.cos(a) * 1.05)));
+  // Chin strap: from below each ear guard, down and forward under the chin.
+  const chin = arc(-1.3, 1.3, 16, (a) => headPoint(V(Math.sin(a), -1.0, Math.cos(a) * 0.95 + 0.12)));
+  [crown, rear, chin].forEach((pts) => g.add(mesh(strapGeometry(pts), strapMat)));
+
+  // Chin cup and the rear buckle.
+  const cupPos = headPoint(V(0, -0.85, 0.75), 0.008);
+  const cup = mesh(new THREE.SphereGeometry(0.026, 24, 14, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshPhysicalMaterial({ color: 0x15161a, roughness: 0.45, side: THREE.DoubleSide }), null, null);
+  cup.position.copy(cupPos);
+  cup.lookAt(cupPos.clone().add(headNormal(cupPos)));
+  cup.rotateX(Math.PI / 2);
+  cup.scale.set(1.25, 0.55, 1);
+  g.add(cup);
+  const bk = headPoint(V(0, 0.18, -1), 0.007);
+  const buckle = mesh(rbox(0.03, 0.022, 0.006, 0.003), std(0x2b2d33, { roughness: 0.4, metalness: 0.3 }));
+  buckle.position.copy(bk);
+  buckle.lookAt(bk.clone().add(headNormal(bk)));
+  g.add(buckle);
+
+  // Resting on the desk in its worn shape, turned three-quarters toward the room.
+  g.rotation.set(0.1, -0.55, 0.0);
   const holder = new THREE.Group();
   holder.add(g);
   holder.position.set(0.71, DESK_Y, -0.2);
@@ -1061,7 +1170,7 @@ function buildLights(scene, parts) {
   // Late-afternoon sun, aimed through the window: a spotlight from outside whose cone just covers the
   // opening, so the wall's shadow carves out a window-shaped patch (mullions and all) on the desk.
   const { cx, cy, w, h } = WINDOW;
-  const dir = new THREE.Vector3(0.95, -2.1, 1.5).normalize();
+  const dir = SUN_DIR;
   const winC = new THREE.Vector3(cx, cy, WALL_Z);
   const dist = 3.2;
   const sun = new THREE.SpotLight(0xffc98a, 4.2, 0, Math.atan((Math.hypot(w, h) / 2 + 0.06) / dist), 0.3, 0);
@@ -1086,7 +1195,7 @@ function buildLights(scene, parts) {
 /* ---------------- entry ---------------- */
 export function buildScene(data) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0xe9dcc8);
+  // No scene.background: main.js clears to the room colour itself, because it renders in two passes.
   scene.fog = new THREE.Fog(0xe9dcc8, 4.5, 12);
   const parts = {};
   buildRoom(scene, parts);

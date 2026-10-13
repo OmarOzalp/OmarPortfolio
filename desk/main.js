@@ -8,7 +8,8 @@
 import * as THREE from 'three';
 import { CSS3DRenderer, CSS3DObject } from 'three/addons/CSS3DRenderer.js';
 import { RoomEnvironment } from 'three/addons/RoomEnvironment.js';
-import { buildScene, DESK_Y } from './scene.js';
+import { buildScene, DESK_Y, WINDOW, WALL_Z, SUN_DIR } from './scene.js';
+import { buildOutdoor } from './outdoor.js';
 import { PROPS } from './props.js';
 import { loadFonts, setMaxAnisotropy } from './textures.js';
 
@@ -45,7 +46,10 @@ async function start3D() {
   await loadFonts();
 
   const canvas = $('gl');
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, stencil: true, powerPreference: 'high-performance' });
+  // Two passes per frame (room, then the beach through the window), so clearing is done by hand.
+  renderer.autoClear = false;
+  renderer.setClearColor(0xe9dcc8, 1);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -60,6 +64,49 @@ async function start3D() {
   scene.environmentIntensity = 0.45;
 
   const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.01, 30);
+
+  // The beach outside: its own scene, drawn only where the window portal marked the stencil buffer.
+  const outdoor = buildOutdoor({ pivot: new THREE.Vector3(0, 1.65, 1.67), yaw: 0.37, tilt: -0.13, sunDirWorld: SUN_DIR.clone().negate() });
+  const outCam = new THREE.PerspectiveCamera();
+  const winCorners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([sx, sy]) =>
+    new THREE.Vector3(WINDOW.cx + (sx * WINDOW.w) / 2, WINDOW.cy + (sy * WINDOW.h) / 2, WALL_Z));
+  const tmpV = new THREE.Vector3();
+
+  // Screen-space box around the window (in CSS px, origin bottom-left), or null if it's off screen.
+  function windowRect() {
+    const W = window.innerWidth, H = window.innerHeight;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const c of winCorners) {
+      tmpV.copy(c).applyMatrix4(camera.matrixWorldInverse);
+      if (tmpV.z > -camera.near) return { x: 0, y: 0, w: W, h: H };  // a corner is behind the camera
+      tmpV.copy(c).project(camera);
+      const px = (tmpV.x * 0.5 + 0.5) * W, py = (tmpV.y * 0.5 + 0.5) * H;
+      x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py);
+    }
+    x0 = Math.max(0, Math.floor(x0) - 2); y0 = Math.max(0, Math.floor(y0) - 2);
+    x1 = Math.min(W, Math.ceil(x1) + 2); y1 = Math.min(H, Math.ceil(y1) + 2);
+    return x1 > x0 && y1 > y0 ? { x: x0, y: y0, w: x1 - x0, h: y1 - y0 } : null;
+  }
+
+  function renderAll(t) {
+    renderer.clear(true, true, true);
+    renderer.render(scene, camera);
+    const rect = windowRect();
+    if (!rect) return;
+    outCam.copy(camera);
+    outCam.near = 0.3;
+    outCam.far = 9000;
+    outCam.updateProjectionMatrix();
+    outdoor.update(t, outCam);
+    renderer.clearDepth();
+    renderer.setScissorTest(true);
+    renderer.setScissor(rect.x, rect.y, rect.w, rect.h);
+    const exposure = renderer.toneMappingExposure;
+    renderer.toneMappingExposure = 0.92;
+    renderer.render(outdoor.scene, outCam);
+    renderer.toneMappingExposure = exposure;
+    renderer.setScissorTest(false);
+  }
 
   // CSS3D layer with the OS iframe, aligned to the screen mesh. The CSS world is the 3D world scaled
   // up (meters -> millimeters): the projection is identical, but browsers hit-test transformed iframes
@@ -584,7 +631,7 @@ async function start3D() {
     }
 
     if (dirty || cam.tween || mode !== 'screen') {
-      renderer.render(scene, camera);
+      renderAll(t);
       dirty = false;
     }
     camera.updateMatrixWorld();
@@ -603,5 +650,5 @@ async function start3D() {
   maybeReveal();
 
   // Debug hooks for automated screenshots.
-  window.__desk = { focusProp, goScreen, goOverview, togglePower, props: () => Object.fromEntries(Object.entries(propGroups).map(([k, g]) => [k, { c: g.userData.center.toArray().map((v) => +v.toFixed(3)), r: +g.userData.radius.toFixed(3) }])), get mode() { return mode; }, get osState() { return osState; } };
+  window.__desk = { focusProp, goScreen, goOverview, togglePower, view: (p, t) => { setMode('prop'); snapTo({ pos: new THREE.Vector3(...p), target: new THREE.Vector3(...t) }); }, props: () => Object.fromEntries(Object.entries(propGroups).map(([k, g]) => [k, { c: g.userData.center.toArray().map((v) => +v.toFixed(3)), r: +g.userData.radius.toFixed(3) }])), get mode() { return mode; }, get osState() { return osState; } };
 }
