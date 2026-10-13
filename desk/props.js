@@ -4,6 +4,7 @@
 //        'screen' fly into the monitor and use the computer
 //        'toggle' flip something on the spot (the lamp)
 // view:  optional camera tweaks: dir (direction from the object toward the camera), zoom (distance multiplier)
+// wall:  hung on the wall, so it stays put when focused instead of lifting and swaying (which would clip it into the wall)
 // actions: buttons on the card. { app } opens an app on the PC, { url } opens a link.
 // photo:   id of a photo in VFS.PHOTOS (os/fs.js) pinned to the card; gallery: several, as thumbnails.
 
@@ -101,7 +102,8 @@ export const PROPS = {
     ],
     photo: 'me',
     actions: [{ label: 'See my experience', app: 'experience' }, { label: 'About me', app: 'about' }],
-    view: { dir: [0, 0.15, 1], zoom: 1.25 }
+    view: { dir: [0, 0.15, 1], zoom: 1.25 },
+    wall: true
   },
 
   floppies: {
@@ -138,6 +140,7 @@ export const PROPS = {
     ],
     gallery: ['dive-crew', 'yellowtail', 'wrestling', 'workshop'],
     actions: [{ label: 'Open My Pictures on the PC', app: 'pictures' }],
-    view: { dir: [0, 0.12, 1], zoom: 0.85 }
+    view: { dir: [0, 0.12, 1], zoom: 0.85 },
+    wall: true
   }
 };
