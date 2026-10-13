@@ -37,7 +37,7 @@ var VFS = (function() {
     headline: 'ECE, CS & Math @ Duke University',
     bio: 'I\'m an ECE, CS & Math student at Duke. I\'ve interned across Kuwait and Dubai, building data tools ' +
       'and consumer apps at companies ranging from real estate platforms to retail giants. I like problems that ' +
-      'sit where engineering meets people. Off the keyboard I\'m diving, wrestling, running track, sketching, ' +
+      'sit where engineering meets people. Off the keyboard I\'m diving, fishing, wrestling, running track, sketching, ' +
       'or building something with a power drill I probably shouldn\'t own.',
     links: {
       github: 'https://github.com/omarozalp',
@@ -55,7 +55,7 @@ var VFS = (function() {
     activities: [
       { name: 'Delta Sigma Pi', desc: 'Co-ed Business Fraternity \xb7 Duke University' }
     ],
-    interests: ['Scuba diving', 'Wrestling', 'Track & field', 'Sketching', 'Building things', 'Gaming']
+    interests: ['Scuba diving', 'Fishing', 'Wrestling', 'Track & field', 'Sketching', 'Building things', 'Gaming']
   };
 
   var INTERESTS_TXT = [
@@ -75,6 +75,8 @@ var VFS = (function() {
     '',
     '[Building]    Proud owner of one (1) power drill and many opinions about',
     '              wall anchors.',
+    '',
+    '[Fishing]     Patience, tested. Occasionally rewarded with a yellowtail.',
     '',
     '[Gaming]      The RGB on my mouse adds +10 FPS. This is science.',
     '',
@@ -113,7 +115,13 @@ var VFS = (function() {
           'minesweeper.exe': '#!app:minesweeper',
           'snake.exe': '#!app:snake'
         },
-        pictures: {},
+        pictures: {
+          'dive_crew.jpg': '#!photo:dive-crew',
+          'yellowtail.jpg': '#!photo:yellowtail',
+          'wrestling.jpg': '#!photo:wrestling',
+          'workshop.jpg': '#!photo:workshop',
+          'duke_chapel.jpg': '#!photo:me'
+        },
         downloads: {}
       }
     },
@@ -131,6 +139,20 @@ var VFS = (function() {
     },
     bin: {}
   };
+
+  // Photos (in assets/photos, with smaller copies in assets/photos/thumbs). Used by My Pictures, About Me,
+  // the plain page, and the desk's photo string and prop cards. Paths are relative to the site root.
+  var PHOTOS = [
+    { id: 'dive-crew', file: 'dive_crew.jpg', caption: 'The dive crew, out of Cairns', w: 4, h: 3 },
+    { id: 'yellowtail', file: 'yellowtail.jpg', caption: 'Yellowtail, landed', w: 4, h: 3 },
+    { id: 'wrestling', file: 'wrestling.jpg', caption: 'When the whole team rushes the mat', w: 3, h: 2 },
+    { id: 'workshop', file: 'workshop.jpg', caption: 'Giant letters. One saw. All fingers intact.', w: 9, h: 16 },
+    { id: 'me', file: 'duke_chapel.jpg', caption: 'Suited up at Duke Chapel', w: 2, h: 3 }
+  ];
+  PHOTOS.forEach(function(p) {
+    p.src = 'assets/photos/' + p.id + '.jpg';
+    p.thumb = 'assets/photos/thumbs/' + p.id + '.jpg';
+  });
 
   // Project metadata used by the Projects app, Explorer and the desk's floppy disks.
   var PROJECTS = [
@@ -229,6 +251,8 @@ var VFS = (function() {
     HOME: HOME,
     PROFILE: PROFILE,
     PROJECTS: PROJECTS,
+    PHOTOS: PHOTOS,
+    photo: function(id) { for (var i = 0; i < PHOTOS.length; i++) if (PHOTOS[i].id === id) return PHOTOS[i]; return null; },
     appOf: function(absPath) { var c = read(absPath); return c && c.indexOf('#!app:') === 0 ? c.slice(6).trim() : null; },
     normalize: normalize,
     isDir: isDir,
