@@ -99,19 +99,286 @@ export function woodTexture() {
   return toTexture(c);
 }
 
-/* Painted plaster wall. */
-export function wallTexture() {
+/* Painted plaster, tinted with the given colour. UVs are in meters; one tile covers 1.5m. */
+export function paintTexture(color) {
   const [c, ctx] = canvas(512, 512);
   const rand = rng(11);
-  ctx.fillStyle = '#4a5160';
+  ctx.fillStyle = color;
   ctx.fillRect(0, 0, 512, 512);
-  speckle(ctx, 512, 512, 14000, ['rgba(0,0,0,0.035)', 'rgba(255,255,255,0.025)'], rand, 1);
-  // Soft roller marks.
-  for (let i = 0; i < 40; i++) {
-    ctx.fillStyle = `rgba(${rand() < 0.5 ? '0,0,0' : '255,255,255'},0.018)`;
-    ctx.fillRect(rand() * 512, 0, 20 + rand() * 60, 512);
+  speckle(ctx, 512, 512, 16000, ['rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)'], rand, 1);
+  for (let i = 0; i < 50; i++) {
+    ctx.fillStyle = `rgba(${rand() < 0.5 ? '0,0,0' : '255,255,255'},0.022)`;
+    ctx.beginPath();
+    ctx.ellipse(rand() * 512, rand() * 512, 30 + rand() * 90, 14 + rand() * 40, rand() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
   }
-  return toTexture(c, { repeat: [3, 2] });
+  return toTexture(c, { repeat: [1 / 1.5, 1 / 1.5] });
+}
+
+/* White beadboard wainscoting: vertical boards with a groove every ~3.75cm. One tile = 0.6m. */
+export function beadboardTexture() {
+  const [c, ctx] = canvas(512, 512);
+  const rand = rng(13);
+  ctx.fillStyle = '#f3f0e8';
+  ctx.fillRect(0, 0, 512, 512);
+  speckle(ctx, 512, 512, 5000, ['rgba(0,0,0,0.025)'], rand, 1);
+  for (let x = 0; x < 512; x += 32) {
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x, 0, 2, 512);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillRect(x + 2, 0, 2, 512);
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(x + 4, 0, 6, 512);
+  }
+  return toTexture(c, { repeat: [1 / 0.6, 1] });
+}
+
+/* The view out the window: a golden-hour beach with palms, a lifeguard tower, an umbrella and a surfboard.
+   The window shows roughly u = 0.2..0.6 of this image from the desk, so the good stuff lives there. */
+export function beachTexture() {
+  const W = 2048, H = 1152;
+  const [c, ctx] = canvas(W, H);
+  const rand = rng(23);
+  const hz = Math.round(H * 0.47);
+  const shore = Math.round(H * 0.66);
+
+  // Sky.
+  const sky = ctx.createLinearGradient(0, 0, 0, hz);
+  sky.addColorStop(0, '#2c7fd4');
+  sky.addColorStop(0.42, '#74b9ec');
+  sky.addColorStop(0.78, '#ffd9a6');
+  sky.addColorStop(1, '#ffb27e');
+  ctx.fillStyle = sky;
+  ctx.fillRect(0, 0, W, hz + 2);
+
+  // Sun and its glow.
+  const sx = W * 0.47, sy = hz - 92;
+  const glow = ctx.createRadialGradient(sx, sy, 10, sx, sy, 520);
+  glow.addColorStop(0, 'rgba(255,236,190,0.95)');
+  glow.addColorStop(0.18, 'rgba(255,214,150,0.55)');
+  glow.addColorStop(1, 'rgba(255,190,130,0)');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, hz);
+  ctx.fillStyle = '#fff6df';
+  ctx.beginPath();
+  ctx.arc(sx, sy, 52, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Puffy clouds, lit warm from below.
+  function cloud(x, y, s) {
+    for (let i = 0; i < 7; i++) {
+      const cx = x + (i - 3) * 38 * s + (rand() - 0.5) * 20 * s;
+      const cy = y - Math.sin((i / 6) * Math.PI) * 26 * s;
+      const r = (34 + rand() * 26) * s;
+      const g = ctx.createRadialGradient(cx, cy - r * 0.3, r * 0.2, cx, cy, r);
+      g.addColorStop(0, 'rgba(255,255,255,0.95)');
+      g.addColorStop(0.7, 'rgba(255,236,222,0.85)');
+      g.addColorStop(1, 'rgba(255,214,200,0)');
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  cloud(W * 0.3, hz * 0.32, 1.2);
+  cloud(W * 0.62, hz * 0.2, 1.0);
+  cloud(W * 0.82, hz * 0.45, 0.8);
+  cloud(W * 0.12, hz * 0.55, 0.7);
+  cloud(W * 0.5, hz * 0.6, 0.55);
+
+  // Gulls.
+  ctx.strokeStyle = 'rgba(40,50,70,0.7)';
+  ctx.lineWidth = 3;
+  [[0.36, 0.3, 1], [0.39, 0.26, 0.8], [0.55, 0.36, 0.9]].forEach(([u, v, s]) => {
+    const x = W * u, y = hz * v;
+    ctx.beginPath();
+    ctx.moveTo(x - 16 * s, y);
+    ctx.quadraticCurveTo(x - 8 * s, y - 10 * s, x, y);
+    ctx.quadraticCurveTo(x + 8 * s, y - 10 * s, x + 16 * s, y);
+    ctx.stroke();
+  });
+
+  // A hazy headland on the horizon.
+  ctx.fillStyle = 'rgba(92,120,160,0.7)';
+  ctx.beginPath();
+  ctx.moveTo(0, hz);
+  ctx.quadraticCurveTo(W * 0.08, hz - 60, W * 0.17, hz - 34);
+  ctx.quadraticCurveTo(W * 0.24, hz - 18, W * 0.3, hz);
+  ctx.fill();
+
+  // Ocean.
+  const sea = ctx.createLinearGradient(0, hz, 0, shore);
+  sea.addColorStop(0, '#2a7aa6');
+  sea.addColorStop(0.55, '#26a7b8');
+  sea.addColorStop(1, '#5fd6cc');
+  ctx.fillStyle = sea;
+  ctx.fillRect(0, hz, W, shore - hz);
+  // Sun glitter, widening toward the viewer.
+  for (let i = 0; i < 700; i++) {
+    const t = Math.pow(rand(), 1.6);
+    const y = hz + 4 + t * (shore - hz - 30);
+    const spread = 40 + t * 380;
+    const x = sx + (rand() - 0.5) * 2 * spread * (0.4 + rand() * 0.6);
+    ctx.fillStyle = `rgba(255,242,205,${0.35 + rand() * 0.55})`;
+    ctx.fillRect(x, y, 6 + t * 40 * rand(), 1.5 + t * 2);
+  }
+  // Swell lines.
+  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
+  for (let i = 0; i < 26; i++) {
+    const y = hz + 20 + Math.pow(rand(), 0.7) * (shore - hz - 40);
+    const x0 = rand() * W;
+    ctx.lineWidth = 1 + (y - hz) / 90;
+    ctx.beginPath();
+    ctx.moveTo(x0, y);
+    ctx.quadraticCurveTo(x0 + 80, y - 6, x0 + 180 + rand() * 120, y);
+    ctx.stroke();
+  }
+
+  // Shoreline: shallow band, foam, wet sand, then dry sand.
+  const sand = ctx.createLinearGradient(0, shore, 0, H);
+  sand.addColorStop(0, '#dcbb8c');
+  sand.addColorStop(0.12, '#f3d9a8');
+  sand.addColorStop(1, '#e9c48d');
+  ctx.fillStyle = sand;
+  ctx.fillRect(0, shore - 6, W, H - shore + 6);
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.beginPath();
+  ctx.moveTo(0, shore);
+  for (let x = 0; x <= W; x += 32) ctx.lineTo(x, shore - 4 - Math.sin(x * 0.012) * 6 - rand() * 4);
+  for (let x = W; x >= 0; x -= 32) ctx.lineTo(x, shore + 6 + Math.sin(x * 0.009 + 1) * 5);
+  ctx.fill();
+  ctx.fillStyle = 'rgba(120,200,210,0.35)';
+  ctx.fillRect(0, shore + 8, W, 14);
+  // Sand grain.
+  ctx.save();
+  ctx.translate(0, shore);
+  speckle(ctx, W, H - shore, 20000, ['rgba(150,110,60,0.16)', 'rgba(255,250,235,0.3)'], rand, 2);
+  ctx.restore();
+
+  // Beach umbrella.
+  (function umbrella(x, y) {
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x + 14, y + 150);
+    ctx.stroke();
+    const cols = ['#ff5a5f', '#ffffff', '#ffc93c', '#ffffff', '#2ec4b6', '#ffffff'];
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = cols[i];
+      ctx.beginPath();
+      ctx.moveTo(x, y - 6);
+      const a0 = Math.PI + (i / 6) * Math.PI, a1 = Math.PI + ((i + 1) / 6) * Math.PI;
+      ctx.lineTo(x + Math.cos(a0) * 120, y + 30 + Math.sin(a0) * 46);
+      ctx.lineTo(x + Math.cos(a1) * 120, y + 30 + Math.sin(a1) * 46);
+      ctx.fill();
+    }
+    ctx.fillStyle = 'rgba(120,80,40,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(x + 30, y + 160, 110, 18, 0, 0, Math.PI * 2);
+    ctx.fill();
+  })(W * 0.585, shore + 90);
+
+  // Lifeguard tower.
+  (function tower(x, y) {
+    ctx.strokeStyle = '#f4efe6';
+    ctx.lineWidth = 7;
+    [[-40, -18], [40, 18]].forEach(([a, b]) => {
+      ctx.beginPath();
+      ctx.moveTo(x + a, y + 150);
+      ctx.lineTo(x + b, y);
+      ctx.stroke();
+    });
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x - 30, y + 110); ctx.lineTo(x + 30, y + 40);
+    ctx.moveTo(x + 30, y + 110); ctx.lineTo(x - 30, y + 40);
+    ctx.stroke();
+    ctx.fillStyle = '#e8433a';
+    ctx.fillRect(x - 58, y - 80, 116, 80);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(x - 58, y - 52, 116, 14);
+    ctx.fillStyle = '#7fd3e6';
+    ctx.fillRect(x - 40, y - 72, 80, 18);
+    ctx.fillStyle = '#ffd23f';
+    ctx.beginPath();
+    ctx.moveTo(x - 72, y - 78); ctx.lineTo(x, y - 120); ctx.lineTo(x + 72, y - 78);
+    ctx.fill();
+    ctx.strokeStyle = '#333';
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.moveTo(x, y - 120); ctx.lineTo(x, y - 170); ctx.stroke();
+    ctx.fillStyle = '#e8433a';
+    ctx.beginPath(); ctx.moveTo(x, y - 170); ctx.lineTo(x + 40, y - 158); ctx.lineTo(x, y - 146); ctx.fill();
+  })(W * 0.5, shore + 10);
+
+  // Surfboard planted in the sand.
+  ctx.save();
+  ctx.translate(W * 0.405, shore + 120);
+  ctx.rotate(-0.12);
+  ctx.fillStyle = '#ff7b54';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 26, 120, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(-4, -118, 8, 236);
+  ctx.fillStyle = '#2ec4b6';
+  ctx.fillRect(-26, -30, 52, 12);
+  ctx.restore();
+
+  // Palm trees.
+  function palm(x, y, h, lean, s) {
+    ctx.strokeStyle = '#7a5532';
+    ctx.lineCap = 'round';
+    const tx = x + lean, ty = y - h;
+    for (let i = 0; i < 14; i++) {
+      const t0 = i / 14, t1 = (i + 1) / 14;
+      const bx = (t) => x + lean * t * t;
+      const by = (t) => y - h * t;
+      ctx.lineWidth = (26 - t0 * 12) * s;
+      ctx.strokeStyle = i % 2 ? '#7a5532' : '#8d6640';
+      ctx.beginPath();
+      ctx.moveTo(bx(t0), by(t0));
+      ctx.lineTo(bx(t1), by(t1));
+      ctx.stroke();
+    }
+    const fronds = 9;
+    for (let i = 0; i < fronds; i++) {
+      const a = -Math.PI + (i / (fronds - 1)) * Math.PI + (rand() - 0.5) * 0.2;
+      const len = (150 + rand() * 60) * s;
+      const ex = tx + Math.cos(a) * len, ey = ty + Math.sin(a) * len * 0.55 + 60 * s;
+      const mx = tx + Math.cos(a) * len * 0.5, my = ty + Math.sin(a) * len * 0.55 - 30 * s;
+      ctx.strokeStyle = i % 2 ? '#2f8f46' : '#3daa55';
+      ctx.lineWidth = 7 * s;
+      ctx.beginPath();
+      ctx.moveTo(tx, ty);
+      ctx.quadraticCurveTo(mx, my, ex, ey);
+      ctx.stroke();
+      // Leaflets.
+      ctx.lineWidth = 3 * s;
+      for (let k = 2; k < 12; k++) {
+        const t = k / 12;
+        const px = (1 - t) * (1 - t) * tx + 2 * (1 - t) * t * mx + t * t * ex;
+        const py = (1 - t) * (1 - t) * ty + 2 * (1 - t) * t * my + t * t * ey;
+        const l = (1 - t) * 46 * s + 10 * s;
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + Math.cos(a + 1.3) * l, py + Math.sin(a + 1.3) * l + l * 0.5);
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + Math.cos(a - 1.3) * l, py + Math.sin(a - 1.3) * l + l * 0.5);
+        ctx.stroke();
+      }
+    }
+    ctx.fillStyle = '#5a3d1e';
+    [[-10, 14], [10, 18], [0, 26]].forEach(([dx, dy]) => {
+      ctx.beginPath();
+      ctx.arc(tx + dx * s, ty + dy * s, 10 * s, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+  palm(W * 0.255, H * 1.02, 640, 70, 1.25);
+  palm(W * 0.67, H * 0.98, 520, -50, 1.0);
+  palm(W * 0.15, H * 1.0, 560, -40, 1.1);
+  return toTexture(c);
 }
 
 export function floorTexture() {
@@ -130,90 +397,35 @@ export function floorTexture() {
   return toTexture(c, { repeat: [6, 6] });
 }
 
-/* Night view out the window: a gulf skyline with one very tall tower, a moon and stars. */
-export function skylineTexture() {
-  const W = 1024, H = 768;
+/* A polaroid: white card, handwritten caption, and the photo cropped square ("cover").
+   The photo loads asynchronously and is painted in when it arrives. */
+export function polaroidTexture(url, caption, seed = 1) {
+  const W = 440, H = 528, P = 26, S = W - P * 2;
   const [c, ctx] = canvas(W, H);
-  const rand = rng(21);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#060a1c');
-  g.addColorStop(0.55, '#16224a');
-  g.addColorStop(0.8, '#3a3156');
-  g.addColorStop(1, '#5a3a4a');
-  ctx.fillStyle = g;
+  const rand = rng(seed);
+  ctx.fillStyle = '#fbfaf5';
   ctx.fillRect(0, 0, W, H);
-  for (let i = 0; i < 260; i++) {
-    ctx.fillStyle = `rgba(255,255,255,${0.2 + rand() * 0.8})`;
-    const s = rand() < 0.08 ? 2 : 1;
-    ctx.fillRect(rand() * W, rand() * H * 0.6, s, s);
-  }
-  // Moon.
-  const mg = ctx.createRadialGradient(780, 150, 10, 780, 150, 120);
-  mg.addColorStop(0, 'rgba(255,248,220,0.35)');
-  mg.addColorStop(1, 'rgba(255,248,220,0)');
-  ctx.fillStyle = mg;
-  ctx.fillRect(600, 0, 400, 320);
-  ctx.fillStyle = '#fff6da';
-  ctx.beginPath();
-  ctx.arc(780, 150, 38, 0, Math.PI * 2);
-  ctx.fill();
-  // Skyline silhouettes with lit windows.
-  const base = H * 0.92;
-  const buildings = [];
-  let x = -10;
-  while (x < W) {
-    const w = 30 + rand() * 60;
-    const h = 60 + rand() * 170;
-    buildings.push([x, w, h]);
-    x += w + rand() * 6;
-  }
-  buildings.forEach(([bx, bw, bh]) => {
-    ctx.fillStyle = '#0b0f1e';
-    ctx.fillRect(bx, base - bh, bw, bh + 40);
-    for (let wy = base - bh + 8; wy < base; wy += 10) {
-      for (let wx = bx + 5; wx < bx + bw - 5; wx += 8) {
-        if (rand() < 0.28) {
-          ctx.fillStyle = rand() < 0.8 ? 'rgba(255,214,140,0.8)' : 'rgba(170,210,255,0.8)';
-          ctx.fillRect(wx, wy, 3, 4);
-        }
-      }
-    }
-  });
-  // The tall one.
-  ctx.fillStyle = '#0b0f1e';
-  ctx.beginPath();
-  const tx = 330;
-  ctx.moveTo(tx - 34, base);
-  ctx.lineTo(tx - 26, base - 220);
-  ctx.lineTo(tx - 16, base - 330);
-  ctx.lineTo(tx - 8, base - 430);
-  ctx.lineTo(tx - 2, base - 540);
-  ctx.lineTo(tx, base - 610);
-  ctx.lineTo(tx + 2, base - 540);
-  ctx.lineTo(tx + 9, base - 420);
-  ctx.lineTo(tx + 18, base - 310);
-  ctx.lineTo(tx + 28, base - 200);
-  ctx.lineTo(tx + 36, base);
-  ctx.fill();
-  for (let wy = base - 520; wy < base; wy += 9) {
-    const half = 2 + (wy - (base - 600)) / 600 * 30;
-    for (let wx = tx - half; wx < tx + half; wx += 6) {
-      if (rand() < 0.35) {
-        ctx.fillStyle = 'rgba(255,224,160,0.85)';
-        ctx.fillRect(wx, wy, 2, 3);
-      }
-    }
-  }
-  ctx.fillStyle = '#ff4040';
-  ctx.fillRect(tx - 1, base - 614, 3, 3);
-  // Water reflection band.
-  ctx.fillStyle = '#070b18';
-  ctx.fillRect(0, base, W, H - base);
-  for (let i = 0; i < 140; i++) {
-    ctx.fillStyle = `rgba(255,210,140,${rand() * 0.35})`;
-    ctx.fillRect(rand() * W, base + 4 + rand() * (H - base - 6), 6 + rand() * 20, 1);
-  }
-  return toTexture(c);
+  speckle(ctx, W, H, 1500, ['rgba(0,0,0,0.03)'], rand, 2);
+  ctx.fillStyle = '#d9d4c8';
+  ctx.fillRect(P, P, S, S);
+  ctx.fillStyle = '#2a2f45';
+  ctx.font = '600 46px Caveat, "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText(caption, W / 2, H - 38);
+  const tex = toTexture(c);
+  const img = new Image();
+  img.onload = () => {
+    const a = img.width / img.height;
+    const sw = a > 1 ? img.height : img.width, sh = sw;
+    const sx = (img.width - sw) / 2, sy = a > 1 ? 0 : (img.height - sh) * 0.3;
+    ctx.drawImage(img, sx, sy, sw, sh, P, P, S, S);
+    // A little warmth and fade, like an instant print.
+    ctx.fillStyle = 'rgba(255,220,170,0.08)';
+    ctx.fillRect(P, P, S, S);
+    tex.needsUpdate = true;
+  };
+  img.src = url;
+  return tex;
 }
 
 /* Duke pennant: blue felt triangle with white lettering. */
@@ -233,76 +445,6 @@ export function pennantTexture() {
   ctx.fillText('DUKE', 120, H / 2 - 18);
   ctx.font = '700 34px Georgia, serif';
   ctx.fillText('BLUE DEVILS', 132, H / 2 + 72);
-  return toTexture(c);
-}
-
-/* Poster: "dive deeper" with a whale shark silhouette. */
-export function posterTexture() {
-  const W = 600, H = 840;
-  const [c, ctx] = canvas(W, H);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#2fb6d8');
-  g.addColorStop(0.45, '#0d5f8c');
-  g.addColorStop(1, '#03203a');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-  // Light rays.
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 6; i++) {
-    ctx.beginPath();
-    ctx.moveTo(120 + i * 70, 0);
-    ctx.lineTo(160 + i * 70, 0);
-    ctx.lineTo(60 + i * 120, H * 0.75);
-    ctx.lineTo(20 + i * 110, H * 0.75);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  // Whale shark.
-  ctx.save();
-  ctx.translate(300, 470);
-  ctx.fillStyle = '#062a45';
-  ctx.beginPath();
-  ctx.moveTo(-230, 10);
-  ctx.quadraticCurveTo(-120, -80, 60, -55);
-  ctx.quadraticCurveTo(170, -40, 215, -110);
-  ctx.lineTo(232, -100);
-  ctx.quadraticCurveTo(215, -25, 240, 50);
-  ctx.lineTo(222, 58);
-  ctx.quadraticCurveTo(190, 20, 70, 40);
-  ctx.quadraticCurveTo(-20, 70, -120, 60);
-  ctx.lineTo(-90, 110);
-  ctx.lineTo(-140, 62);
-  ctx.quadraticCurveTo(-210, 55, -230, 10);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-10, -62);
-  ctx.lineTo(30, -120);
-  ctx.lineTo(45, -55);
-  ctx.fill();
-  const rand = rng(9);
-  ctx.fillStyle = 'rgba(200,235,255,0.55)';
-  for (let i = 0; i < 70; i++) {
-    const x = -200 + rand() * 380, y = -50 + rand() * 90;
-    ctx.beginPath();
-    ctx.arc(x, y + (x > 100 ? -20 : 0), 2 + rand() * 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-  // Bubbles.
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 18; i++) {
-    ctx.beginPath();
-    ctx.arc(80 + rand() * 440, 120 + rand() * 280, 4 + rand() * 9, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.font = '400 92px "Permanent Marker", Impact, sans-serif';
-  ctx.fillText('DIVE', W / 2, 700);
-  ctx.font = '400 64px "Permanent Marker", Impact, sans-serif';
-  ctx.fillText('DEEPER', W / 2, 778);
   return toTexture(c);
 }
 
@@ -428,22 +570,6 @@ export function floppyTexture(label, color, seed) {
   ctx.font = '600 50px Caveat, cursive';
   ctx.fillText(label[1] || '', 4, 70);
   ctx.restore();
-  return toTexture(c);
-}
-
-/* Mug wrap: Duke-blue mug with a slogan. */
-export function mugTexture() {
-  const W = 1024, H = 256;
-  const [c, ctx] = canvas(W, H);
-  ctx.fillStyle = '#f4f2ec';
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#012169';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '900 54px Georgia, serif';
-  ctx.fillText("WORLD'S OKAYEST", W * 0.55, H * 0.4);
-  ctx.font = '400 74px "Permanent Marker", Impact, sans-serif';
-  ctx.fillText('DIVER', W * 0.55, H * 0.72);
   return toTexture(c);
 }
 

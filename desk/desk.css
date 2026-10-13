@@ -6,6 +6,12 @@
   font-display: swap;
 }
 @font-face {
+  font-family: 'Caveat';
+  src: url('../assets/fonts/caveat-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
   font-family: 'VT323';
   src: url('../assets/fonts/vt323-latin-400-normal.woff2') format('woff2');
   font-display: swap;
@@ -240,6 +246,57 @@ body[data-mode="screen"] #tooltip { display: none; }
   color: var(--duke);
 }
 .card-body p { margin: 0 0 12px; font-size: 15px; line-height: 26px; }
+
+#card [hidden] { display: none !important; }
+
+/* A photo taped to the card. */
+.card-photo {
+  display: block;
+  position: relative;
+  width: 78%;
+  margin: 4px auto 18px;
+  padding: 8px 8px 30px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  transform: rotate(-1.6deg);
+  cursor: zoom-in;
+  transition: transform 0.2s;
+}
+.card-photo:hover { transform: rotate(0deg) scale(1.02); }
+.card-photo::before {
+  content: '';
+  position: absolute;
+  top: -10px; left: 50%;
+  width: 70px; height: 22px;
+  transform: translateX(-50%) rotate(2deg);
+  background: rgba(255, 236, 160, 0.75);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+.card-photo img { display: block; width: 100%; height: 190px; object-fit: cover; object-position: 50% 30%; }
+.card-photo-cap {
+  position: absolute;
+  left: 0; right: 0; bottom: 6px;
+  font: 600 17px Caveat, 'Comic Sans MS', cursive;
+  color: #2a2f45;
+  text-align: center;
+}
+.card-gallery { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 14px; }
+.card-gallery button {
+  padding: 4px 4px 12px;
+  border: 0;
+  background: #fff;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  cursor: zoom-in;
+  transition: transform 0.15s;
+}
+.card-gallery button:nth-child(odd) { transform: rotate(-2deg); }
+.card-gallery button:nth-child(even) { transform: rotate(2deg); }
+.card-gallery button:hover { transform: rotate(0) scale(1.06); }
+.card-gallery img { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; }
+.card-photo:focus-visible, .card-gallery button:focus-visible { outline: 2px solid #6fd0ff; outline-offset: 3px; }
+#card[data-side="bottom"] .card-photo img { height: 110px; }
+#card[data-side="bottom"] .card-photo { width: 60%; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
 .card-btn {
   font: 600 13.5px var(--ui);

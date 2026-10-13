@@ -70,35 +70,106 @@ function prop(id, group) {
 }
 
 /* ---------------- room ---------------- */
+// The back wall sits at WALL_Z with a real opening for the window, so sunlight can pour through it
+// onto the desk. The beach outside is a big painted plane set back from the wall, so it shifts with the
+// camera like a real view would.
+const WALL_Z = -0.55;
+const WINDOW = { cx: -0.9, cy: 1.43, w: 0.86, h: 0.74 };
+const RAIL_Y = 0.95;
+const CEILING_Y = 2.7;
+
 function buildRoom(scene, parts) {
-  const wallZ = -0.55;
-  const floor = mesh(new THREE.PlaneGeometry(10, 10), std(0xffffff, { map: TX.floorTexture(), roughness: 0.85 }), [0, 0, 0], [-Math.PI / 2, 0, 0], { cast: false });
-  scene.add(floor);
+  const wallZ = WALL_Z;
+  const { cx, cy, w: W, h: H } = WINDOW;
+  const x0 = cx - W / 2, x1 = cx + W / 2, y0 = cy - H / 2, y1 = cy + H / 2;
 
-  const wallMat = std(0xffffff, { map: TX.wallTexture(), roughness: 0.92 });
-  scene.add(mesh(new THREE.PlaneGeometry(8, 3.2), wallMat, [0, 1.6, wallZ], null, { cast: false }));
-  scene.add(mesh(new THREE.PlaneGeometry(4, 3.2), wallMat, [-2.4, 1.6, 1.0], [0, Math.PI / 2, 0], { cast: false }));
-  scene.add(mesh(new THREE.BoxGeometry(8, 0.1, 0.02), std(0x2a2724, { roughness: 0.6 }), [0, 0.05, wallZ + 0.01]));
+  scene.add(mesh(new THREE.PlaneGeometry(10, 10), std(0xffffff, { map: TX.floorTexture(), roughness: 0.85 }), [0, 0, 0], [-Math.PI / 2, 0, 0], { cast: false }));
+  // Ceiling: barely on screen, but it keeps the sun from spilling over the top of the wall.
+  scene.add(mesh(new THREE.PlaneGeometry(8, 4), std(0xf6f1e8, { roughness: 0.9 }), [0, CEILING_Y, 1.45], [Math.PI / 2, 0, 0], { receive: false }));
 
-  // Window with blinds, on the left of the back wall.
+  // Upper wall: sea-glass paint with the window cut out.
+  const paint = std(0xffffff, { map: TX.paintTexture('#8fd3c8'), roughness: 0.92 });
+  const shape = new THREE.Shape();
+  shape.moveTo(-4, RAIL_Y);
+  shape.lineTo(4, RAIL_Y);
+  shape.lineTo(4, CEILING_Y);
+  shape.lineTo(-4, CEILING_Y);
+  shape.lineTo(-4, RAIL_Y);
+  const hole = new THREE.Path();
+  hole.moveTo(x0, y0);
+  hole.lineTo(x0, y1);
+  hole.lineTo(x1, y1);
+  hole.lineTo(x1, y0);
+  hole.lineTo(x0, y0);
+  shape.holes.push(hole);
+  scene.add(mesh(new THREE.ShapeGeometry(shape), paint, [0, 0, wallZ]));
+  scene.add(mesh(new THREE.PlaneGeometry(4, CEILING_Y), paint, [-2.4, CEILING_Y / 2, 1.0], [0, Math.PI / 2, 0], { cast: false }));
+
+  // Lower wall: white beadboard, a chair rail and a baseboard.
+  const bead = TX.beadboardTexture();
+  bead.repeat.set(8 / 0.6, 1);
+  scene.add(mesh(new THREE.PlaneGeometry(8, RAIL_Y), std(0xffffff, { map: bead, roughness: 0.7 }), [0, RAIL_Y / 2, wallZ + 0.001]));
+  const trim = std(0xfbf8f1, { roughness: 0.5 });
+  scene.add(mesh(new THREE.BoxGeometry(8, 0.045, 0.025), trim, [0, RAIL_Y, wallZ + 0.012]));
+  scene.add(mesh(new THREE.BoxGeometry(8, 0.11, 0.02), trim, [0, 0.055, wallZ + 0.01]));
+
+  // Window: casing, sill, reveal (wall thickness) and a sash with a cross of mullions.
   const win = new THREE.Group();
-  const frameMat = std(0xe8e4da, { roughness: 0.6 });
-  const W = 0.78, H = 0.66, cx = -0.95, cy = 1.42;
-  const sky = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshBasicMaterial({ map: TX.skylineTexture() }));
-  sky.position.set(cx, cy, wallZ + 0.002);
-  win.add(sky);
-  [[cx, cy + H / 2 + 0.02, W + 0.08, 0.04], [cx, cy - H / 2 - 0.02, W + 0.08, 0.04]].forEach(([x, y, w, h]) => win.add(mesh(new THREE.BoxGeometry(w, h, 0.05), frameMat, [x, y, wallZ + 0.02])));
-  [[cx - W / 2 - 0.02], [cx + W / 2 + 0.02], [cx]].forEach(([x], i) => win.add(mesh(new THREE.BoxGeometry(i === 2 ? 0.025 : 0.04, H + 0.08, i === 2 ? 0.03 : 0.05), frameMat, [x, cy, wallZ + 0.02])));
-  win.add(mesh(new THREE.BoxGeometry(W + 0.16, 0.025, 0.12), frameMat, [cx, cy - H / 2 - 0.05, wallZ + 0.05]));
-  const slatMat = std(0xf1ede2, { roughness: 0.7 });
-  for (let i = 0; i < 9; i++) {
-    win.add(mesh(new THREE.BoxGeometry(W + 0.02, 0.002, 0.03), slatMat, [cx, cy + H / 2 - 0.02 - i * 0.026, wallZ + 0.06], [0.5, 0, 0]));
-  }
-  win.add(mesh(new THREE.BoxGeometry(W + 0.05, 0.03, 0.04), slatMat, [cx, cy + H / 2 + 0.02, wallZ + 0.07]));
-  shadowAll(win, false, true);
+  const T = 0.06, D = 0.13, sashZ = wallZ - 0.09;
+  win.add(mesh(new THREE.BoxGeometry(W + 2 * T, T, 0.03), trim, [cx, y1 + T / 2, wallZ + 0.015]));
+  win.add(mesh(new THREE.BoxGeometry(T, H, 0.03), trim, [x0 - T / 2, cy, wallZ + 0.015]));
+  win.add(mesh(new THREE.BoxGeometry(T, H, 0.03), trim, [x1 + T / 2, cy, wallZ + 0.015]));
+  win.add(mesh(new THREE.BoxGeometry(W + 0.2, 0.026, 0.16), trim, [cx, y0 - 0.013, wallZ + 0.05]));
+  win.add(mesh(new THREE.BoxGeometry(W + 0.08, 0.05, 0.02), trim, [cx, y0 - 0.055, wallZ + 0.01]));
+  win.add(mesh(new THREE.BoxGeometry(0.01, H, D), trim, [x0 + 0.005, cy, wallZ - D / 2]));
+  win.add(mesh(new THREE.BoxGeometry(0.01, H, D), trim, [x1 - 0.005, cy, wallZ - D / 2]));
+  win.add(mesh(new THREE.BoxGeometry(W, 0.01, D), trim, [cx, y1 - 0.005, wallZ - D / 2]));
+  win.add(mesh(new THREE.BoxGeometry(W, 0.01, D), trim, [cx, y0 + 0.005, wallZ - D / 2]));
+  const S = 0.032;
+  win.add(mesh(new THREE.BoxGeometry(W, S, 0.03), trim, [cx, y1 - S / 2, sashZ]));
+  win.add(mesh(new THREE.BoxGeometry(W, S, 0.03), trim, [cx, y0 + S / 2, sashZ]));
+  win.add(mesh(new THREE.BoxGeometry(S, H, 0.03), trim, [x0 + S / 2, cy, sashZ]));
+  win.add(mesh(new THREE.BoxGeometry(S, H, 0.03), trim, [x1 - S / 2, cy, sashZ]));
+  win.add(mesh(new THREE.BoxGeometry(0.022, H, 0.025), trim, [cx, cy, sashZ]));
+  win.add(mesh(new THREE.BoxGeometry(W, 0.022, 0.025), trim, [cx, cy + 0.04, sashZ]));
+  const glass = new THREE.Mesh(new THREE.PlaneGeometry(W, H), new THREE.MeshStandardMaterial({ color: 0xffffff, transparent: true, opacity: 0.05, roughness: 0.05, depthWrite: false }));
+  glass.position.set(cx, cy, sashZ - 0.005);
+  win.add(glass);
   scene.add(win);
 
-  // Duke pennant.
+  // A little succulent on the sill.
+  const plant = new THREE.Group();
+  plant.add(mesh(new THREE.CylinderGeometry(0.035, 0.026, 0.06, 24), std(0xc9643b, { roughness: 0.8 }), [0, 0.03, 0]));
+  plant.add(mesh(new THREE.CylinderGeometry(0.031, 0.031, 0.006, 24), std(0x4a3426, { roughness: 1 }), [0, 0.058, 0]));
+  const leaf = std(0x5fae6a, { roughness: 0.6 });
+  for (let i = 0; i < 9; i++) {
+    const a = (i / 9) * Math.PI * 2;
+    const l = mesh(new THREE.SphereGeometry(0.014, 12, 8), leaf, [Math.cos(a) * 0.014, 0.072 + (i % 3) * 0.006, Math.sin(a) * 0.014], [0, -a, 0.9]);
+    l.scale.set(0.55, 1.5, 0.55);
+    plant.add(l);
+  }
+  plant.position.set(x1 - 0.12, y0, wallZ + 0.06);
+  scene.add(plant);
+
+  // Outside: golden hour at the beach.
+  const beach = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 2.7), new THREE.MeshBasicMaterial({ map: TX.beachTexture(), toneMapped: false, fog: false }));
+  beach.position.set(cx, 1.43, wallZ - 1.4);
+  scene.add(beach);
+
+  // Linen curtains pulled to the sides, on a rod.
+  const linen = std(0xfff8ec, { roughness: 0.95, side: THREE.DoubleSide });
+  [x0 - 0.09, x1 + 0.09].forEach((x, i) => {
+    const geo = new THREE.PlaneGeometry(0.24, H + 0.36, 28, 1);
+    const pos = geo.attributes.position;
+    for (let k = 0; k < pos.count; k++) pos.setZ(k, Math.sin(pos.getX(k) * 70 + i) * 0.012);
+    geo.computeVertexNormals();
+    win.add(mesh(geo, linen, [x, cy - 0.04, wallZ + 0.07]));
+  });
+  win.add(mesh(new THREE.CylinderGeometry(0.008, 0.008, W + 0.62, 12), std(0x2a2a2a, { metalness: 0.6, roughness: 0.4 }), [cx, y1 + 0.13, wallZ + 0.07], [0, 0, Math.PI / 2]));
+  [x0 - 0.31, x1 + 0.31].forEach((x) => win.add(mesh(new THREE.SphereGeometry(0.016, 14, 10), std(0x2a2a2a, { metalness: 0.6, roughness: 0.4 }), [x, y1 + 0.13, wallZ + 0.07])));
+  glass.castShadow = false;
+
+  // Duke pennant, above the monitor.
   const pen = new THREE.Group();
   const pg = new THREE.BufferGeometry();
   pg.setAttribute('position', new THREE.Float32BufferAttribute([0, 0.1, 0, 0, -0.1, 0, 0.62, 0, 0], 3));
@@ -106,18 +177,64 @@ function buildRoom(scene, parts) {
   pg.computeVertexNormals();
   pen.add(mesh(pg, std(0xffffff, { map: TX.pennantTexture(), roughness: 0.95, side: THREE.DoubleSide })));
   pen.add(mesh(new THREE.CylinderGeometry(0.006, 0.006, 0.24, 10), std(0x6b4a2b), [-0.004, 0, 0.004]));
-  pen.position.set(0.3, 1.5, wallZ + 0.01);
-  pen.rotation.z = -0.07;
+  pen.position.set(-0.2, 1.5, wallZ + 0.01);
+  pen.rotation.z = -0.06;
   scene.add(prop('pennant', pen));
 
-  // Dive poster.
-  const poster = new THREE.Group();
-  poster.add(mesh(new THREE.BoxGeometry(0.33, 0.45, 0.015), std(0x111111, { roughness: 0.4 })));
-  poster.add(mesh(new THREE.PlaneGeometry(0.3, 0.42), std(0xffffff, { map: TX.posterTexture(), roughness: 0.35 }), [0, 0, 0.0085]));
-  poster.position.set(0.98, 1.38, wallZ + 0.01);
-  scene.add(poster);
-
   parts.wallZ = wallZ;
+}
+
+/* ---------------- string lights + polaroids ---------------- */
+const POLAROIDS = [
+  ['dive-crew', 'dive crew'],
+  ['yellowtail', 'big one!'],
+  ['wrestling', 'the W'],
+  ['workshop', 'shop day']
+];
+
+function buildPhotoString(scene, parts, photos) {
+  const g = new THREE.Group();
+  const z = WALL_Z + 0.035;
+  const xa = 0.45, xb = 1.08, yEnd = 1.52, sag = 0.05;
+  const yAt = (x) => { const t = (x - xa) / (xb - xa); return yEnd - sag * 4 * t * (1 - t); };
+  const pts = [];
+  for (let i = 0; i <= 40; i++) {
+    const x = xa + (i / 40) * (xb - xa);
+    pts.push(new THREE.Vector3(x, yAt(x), z));
+  }
+  g.add(mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 80, 0.0012, 5), std(0x1f3a26, { roughness: 0.6 }), null, null, { cast: false }));
+  [xa, xb].forEach((x) => g.add(mesh(new THREE.SphereGeometry(0.005, 10, 8), std(0xd8d8d8, { metalness: 0.8, roughness: 0.3 }), [x, yEnd, z - 0.01])));
+  const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfff1d0, emissive: 0xffc46b, emissiveIntensity: 3 });
+  const sockMat = std(0x1f3a26, { roughness: 0.6 });
+  for (let x = xa + 0.03; x < xb - 0.02; x += 0.06) {
+    const y = yAt(x);
+    g.add(mesh(new THREE.CylinderGeometry(0.003, 0.003, 0.008, 8), sockMat, [x, y - 0.006, z], null, { cast: false }));
+    const b = mesh(new THREE.SphereGeometry(0.0065, 12, 10), bulbMat, [x, y - 0.014, z], null, { cast: false });
+    b.scale.y = 1.3;
+    g.add(b);
+  }
+  const glow = new THREE.PointLight(0xffc46b, 0.35, 1.0, 2);
+  glow.position.set((xa + xb) / 2, yEnd - 0.12, z + 0.12);
+  g.add(glow);
+
+  const back = std(0xf4f1e8, { roughness: 0.8 });
+  const pinMat = std(0xc49a6c, { roughness: 0.7 });
+  const xs = [0.52, 0.68, 0.84, 1.0];
+  POLAROIDS.forEach(([id, caption], i) => {
+    const photo = photos.find((p) => p.id === id);
+    if (!photo) return;
+    const pol = new THREE.Group();
+    pol.add(mesh(new THREE.BoxGeometry(0.11, 0.132, 0.0015), back));
+    pol.add(mesh(new THREE.PlaneGeometry(0.11, 0.132), std(0xffffff, { map: TX.polaroidTexture(photo.thumb, caption, 50 + i), roughness: 0.55 }), [0, 0, 0.0022], null, { cast: false }));
+    pol.add(mesh(new THREE.BoxGeometry(0.008, 0.028, 0.007), pinMat, [0, 0.07, 0.004]));
+    const x = xs[i];
+    pol.scale.setScalar(0.85);
+    pol.position.set(x, yAt(x) - 0.004 - 0.066 * 0.85, z + 0.004);
+    pol.rotation.set(0.04, 0, [0.07, -0.05, 0.04, -0.08][i]);
+    g.add(pol);
+  });
+  shadowAll(g, true, true);
+  scene.add(prop('photos', g));
 }
 
 /* ---------------- desk ---------------- */
@@ -403,23 +520,6 @@ function buildSketchbook(scene) {
   scene.add(prop('sketchbook', g));
 }
 
-/* ---------------- mug ---------------- */
-function buildMug(scene) {
-  const g = new THREE.Group();
-  const outer = mesh(new THREE.CylinderGeometry(0.041, 0.039, 0.095, 48, 1, true), std(0xffffff, { map: TX.mugTexture(), roughness: 0.25 }), [0, 0.0475, 0]);
-  g.add(outer);
-  g.add(mesh(new THREE.CylinderGeometry(0.037, 0.035, 0.092, 48, 1, true), std(0xf4f2ec, { roughness: 0.25, side: THREE.BackSide }), [0, 0.049, 0]));
-  g.add(mesh(new THREE.TorusGeometry(0.039, 0.0022, 8, 48), std(0xf4f2ec, { roughness: 0.25 }), [0, 0.095, 0], [Math.PI / 2, 0, 0]));
-  g.add(mesh(new THREE.CylinderGeometry(0.039, 0.039, 0.004, 48), std(0xf4f2ec, { roughness: 0.3 }), [0, 0.002, 0]));
-  g.add(mesh(new THREE.CircleGeometry(0.036, 40), std(0x2a160b, { roughness: 0.1 }), [0, 0.078, 0], [-Math.PI / 2, 0, 0]));
-  const handle = mesh(new THREE.TorusGeometry(0.024, 0.0065, 12, 24, Math.PI * 1.1), std(0xf4f2ec, { roughness: 0.25 }), [0.04, 0.05, 0], [0, 0, -Math.PI * 0.55]);
-  g.add(handle);
-  g.position.set(-0.82, DESK_Y, 0.03);
-  g.rotation.y = 2.82;
-  shadowAll(g);
-  scene.add(prop('mug', g));
-}
-
 /* ---------------- desk lamp ---------------- */
 function buildLamp(scene, parts) {
   const g = new THREE.Group();
@@ -442,12 +542,8 @@ function buildLamp(scene, parts) {
   head.add(mesh(new THREE.LatheGeometry(shadePts, 40), std(0x1f3d2b, { roughness: 0.4, side: THREE.DoubleSide, metalness: 0.3 })));
   const bulbMat = new THREE.MeshStandardMaterial({ color: 0xfff1d6, emissive: 0xffd9a0, emissiveIntensity: 3 });
   head.add(mesh(new THREE.SphereGeometry(0.022, 20, 14), bulbMat, [0, -0.045, 0], null, { cast: false }));
-  const spot = new THREE.SpotLight(0xffd6a0, 5.5, 3.2, 0.95, 0.65, 1.6);
+  const spot = new THREE.SpotLight(0xffd6a0, 3.2, 3.2, 0.95, 0.65, 1.6);
   spot.position.set(0, -0.05, 0);
-  spot.castShadow = true;
-  spot.shadow.mapSize.set(1024, 1024);
-  spot.shadow.bias = -0.0006;
-  spot.shadow.radius = 6;
   head.add(spot);
   const tgt = new THREE.Object3D();
   tgt.position.set(0, -1, 0);
@@ -461,55 +557,167 @@ function buildLamp(scene, parts) {
   shadowAll(g);
   g.traverse((o) => { if (o.isMesh && o.material === bulbMat) o.castShadow = false; });
   scene.add(prop('lamp', g));
-  parts.lamp = { light: spot, bulb: bulbMat, on: true };
+  parts.lamp = { light: spot, bulb: bulbMat, on: true, intensity: spot.intensity };
 }
 
-/* ---------------- dive mask (stand-in) ---------------- */
+/* ---------------- dive mask ---------------- */
+// A low-volume two-lens mask: a curved hard frame, tempered-glass lenses, and a soft silicone skirt lofted
+// from the frame outline (flaring out, then curling back in to the face seal), plus buckles and a ribbed
+// strap lying on the desk. Built facing +z, then laid lens-up.
+function maskOutline() {
+  const s = new THREE.Shape();
+  s.moveTo(0, 0.046);
+  s.quadraticCurveTo(0.045, 0.054, 0.078, 0.042);
+  s.quadraticCurveTo(0.093, 0.03, 0.089, 0.0);
+  s.quadraticCurveTo(0.086, -0.032, 0.06, -0.037);
+  s.quadraticCurveTo(0.036, -0.041, 0.023, -0.031);
+  s.quadraticCurveTo(0.014, -0.058, 0.0, -0.058);
+  s.quadraticCurveTo(-0.014, -0.058, -0.023, -0.031);
+  s.quadraticCurveTo(-0.036, -0.041, -0.06, -0.037);
+  s.quadraticCurveTo(-0.086, -0.032, -0.089, 0.0);
+  s.quadraticCurveTo(-0.093, 0.03, -0.078, 0.042);
+  s.quadraticCurveTo(-0.045, 0.054, 0, 0.046);
+  return s;
+}
+const maskBend = (x) => -1.7 * x * x;   // wraps the mask around the face
+function bendZ(geo) {
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) p.setZ(i, p.getZ(i) + maskBend(p.getX(i)));
+  geo.computeVertexNormals();
+  return geo;
+}
+
+function maskSkirtGeometry() {
+  const N = 140;
+  const base = maskOutline().getSpacedPoints(N).slice(0, N);
+  const cy = -0.004;
+  // [z, scale]: out from the frame, flare, round over, then curl back in to make the face seal lip.
+  const rings = [[0.003, 0.965], [-0.004, 1.0], [-0.014, 1.06], [-0.027, 1.11], [-0.039, 1.125], [-0.048, 1.1], [-0.053, 1.04], [-0.052, 0.96], [-0.046, 0.91], [-0.04, 0.9]];
+  const pos = [], uv = [], idx = [];
+  rings.forEach(([z, k], r) => {
+    base.forEach((pt, i) => {
+      // The nose pocket bulges further down and back.
+      const nose = Math.max(0, 1 - Math.abs(pt.x) / 0.03) * (pt.y < -0.02 ? 1 : 0);
+      const x = pt.x * k, y = cy + (pt.y - cy) * k - nose * 0.008 * (r / rings.length);
+      pos.push(x, y, z + maskBend(x) - nose * 0.006 * (r / rings.length));
+      uv.push(i / N, r / (rings.length - 1));
+    });
+  });
+  for (let r = 0; r < rings.length - 1; r++) {
+    for (let i = 0; i < N; i++) {
+      const a = r * N + i, b = r * N + ((i + 1) % N), c = a + N, d = b + N;
+      idx.push(a, c, b, b, c, d);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// A flat band following a curve (for the strap), with real thickness.
+function ribbonGeometry(points, width, thick) {
+  const curve = new THREE.CatmullRomCurve3(points);
+  const n = 90;
+  const pos = [], uv = [], idx = [];
+  const up = new THREE.Vector3(0, 1, 0);
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const p = curve.getPointAt(t), tan = curve.getTangentAt(t);
+    const side = new THREE.Vector3().crossVectors(up, tan).normalize().multiplyScalar(width / 2);
+    const nrm = new THREE.Vector3().crossVectors(tan, side).normalize().multiplyScalar(thick);
+    [[1, 1], [-1, 1], [-1, 0], [1, 0]].forEach(([sx, top]) => {
+      const q = p.clone().addScaledVector(side, sx).addScaledVector(nrm, top);
+      pos.push(q.x, q.y, q.z);
+      uv.push(t * 8, sx > 0 ? 1 : 0);
+    });
+  }
+  for (let i = 0; i < n; i++) {
+    for (let k = 0; k < 4; k++) {
+      const a = i * 4 + k, b = i * 4 + ((k + 1) % 4), c = a + 4, d = b + 4;
+      idx.push(a, b, c, b, d, c);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+function strapBump() {
+  const c = document.createElement('canvas');
+  c.width = 256; c.height = 64;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#808080';
+  ctx.fillRect(0, 0, 256, 64);
+  for (let x = 0; x < 256; x += 8) {
+    ctx.fillStyle = '#c8c8c8';
+    ctx.fillRect(x, 6, 4, 52);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.wrapS = t.wrapT = THREE.RepeatWrapping;
+  return t;
+}
+
 function buildMask(scene) {
   const g = new THREE.Group();
-  const outline = () => {
-    const s = new THREE.Shape();
-    s.moveTo(0, 0.046);
-    s.quadraticCurveTo(0.045, 0.054, 0.078, 0.042);
-    s.quadraticCurveTo(0.092, 0.03, 0.088, 0.0);
-    s.quadraticCurveTo(0.086, -0.032, 0.06, -0.036);
-    s.quadraticCurveTo(0.036, -0.04, 0.024, -0.03);
-    s.quadraticCurveTo(0.014, -0.056, 0.0, -0.056);
-    s.quadraticCurveTo(-0.014, -0.056, -0.024, -0.03);
-    s.quadraticCurveTo(-0.036, -0.04, -0.06, -0.036);
-    s.quadraticCurveTo(-0.086, -0.032, -0.088, 0.0);
-    s.quadraticCurveTo(-0.092, 0.03, -0.078, 0.042);
-    s.quadraticCurveTo(-0.045, 0.054, 0, 0.046);
-    return s;
-  };
-  const lens = (sx) => roundedRect(0.064, 0.058, 0.02, sx * 0.041, 0.006, new THREE.Path());
-  const frameShape = outline();
-  frameShape.holes.push(lens(-1), lens(1));
-  const frame = new THREE.ExtrudeGeometry(frameShape, { depth: 0.01, bevelEnabled: true, bevelThickness: 0.003, bevelSize: 0.003, bevelSegments: 3, curveSegments: 16 });
-  g.add(mesh(frame, std(0x0f9fb4, { roughness: 0.35 })));
-  const skirtShape = outline();
-  const inner = outline().getPoints(40).map((p) => p.multiplyScalar(0.8));
-  skirtShape.holes.push(new THREE.Path(inner.reverse()));
-  const skirt = new THREE.ExtrudeGeometry(skirtShape, { depth: 0.03, bevelEnabled: true, bevelThickness: 0.006, bevelSize: 0.004, bevelSegments: 3, curveSegments: 16 });
-  const sk = mesh(skirt, std(0x101214, { roughness: 0.55 }), [0, 0, -0.034]);
-  sk.scale.set(1.04, 1.06, 1);
-  g.add(sk);
-  const glassMat = new THREE.MeshStandardMaterial({ color: 0xbfe8ff, transparent: true, opacity: 0.28, roughness: 0.04, metalness: 0.1, envMapIntensity: 2 });
+  const frameMat = new THREE.MeshPhysicalMaterial({ color: 0x0fa3b8, roughness: 0.28, clearcoat: 0.8, clearcoatRoughness: 0.2 });
+  const siliconeMat = new THREE.MeshPhysicalMaterial({ color: 0x141619, roughness: 0.42, sheen: 0.4, sheenColor: new THREE.Color(0x667788), side: THREE.DoubleSide });
+  const glassMat = new THREE.MeshPhysicalMaterial({ color: 0xcfeefe, metalness: 0.1, roughness: 0.02, transparent: true, opacity: 0.32, clearcoat: 1, envMapIntensity: 4, depthWrite: false });
+  const rimMat = std(0x0b0c0e, { roughness: 0.35 });
+
+  const lens = (sx, path) => roundedRect(0.064, 0.058, 0.02, sx * 0.041, 0.006, path);
+  const frameShape = maskOutline();
+  frameShape.holes.push(lens(-1, new THREE.Path()), lens(1, new THREE.Path()));
+  const frame = new THREE.ExtrudeGeometry(frameShape, { depth: 0.009, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.0035, bevelSegments: 4, curveSegments: 24 });
+  g.add(mesh(bendZ(frame), frameMat));
+  // Thin black retainer rings around each lens.
   [-1, 1].forEach((sx) => {
-    const l = mesh(new THREE.ShapeGeometry(roundedRect(0.064, 0.058, 0.02, sx * 0.041, 0.006), 12), glassMat, [0, 0, 0.006], null, { cast: false });
-    g.add(l);
+    const ring = roundedRect(0.07, 0.064, 0.023, sx * 0.041, 0.006);
+    ring.holes.push(lens(sx, new THREE.Path()));
+    const rg = new THREE.ExtrudeGeometry(ring, { depth: 0.003, bevelEnabled: true, bevelThickness: 0.001, bevelSize: 0.001, bevelSegments: 2, curveSegments: 20 });
+    rg.translate(0, 0, 0.013);
+    g.add(mesh(bendZ(rg), rimMat));
+    const glass = new THREE.ShapeGeometry(lens(sx), 20);
+    glass.translate(0, 0, 0.007);
+    const gm = mesh(bendZ(glass), glassMat, null, null, { cast: false });
+    gm.renderOrder = 2;
+    g.add(gm);
   });
-  // Strap, looped flat on the desk behind the mask.
-  const strap = mesh(new THREE.TorusGeometry(0.095, 0.0035, 6, 48, Math.PI * 1.15), std(0x101214, { roughness: 0.6 }), [0, 0, -0.03], [0, 0, Math.PI * 0.93]);
-  strap.scale.set(1, 0.75, 4);
-  g.add(strap);
-  [-1, 1].forEach((sx) => g.add(mesh(new THREE.BoxGeometry(0.012, 0.016, 0.01), std(0x0f9fb4, { roughness: 0.35 }), [sx * 0.092, 0.002, -0.012])));
+  g.add(mesh(maskSkirtGeometry(), siliconeMat));
+  // Buckles on the sides.
+  [-1, 1].forEach((sx) => {
+    const bk = new THREE.Group();
+    bk.add(mesh(rbox(0.016, 0.026, 0.014, 0.004), std(0x15171a, { roughness: 0.4 })));
+    bk.add(mesh(rbox(0.006, 0.018, 0.016, 0.002), frameMat, [sx * 0.006, 0, 0]));
+    bk.position.set(sx * 0.098, 0.003, -0.016 + maskBend(0.098));
+    bk.rotation.y = sx * 0.35;
+    g.add(bk);
+  });
   g.rotation.set(-1.25, 0, 0);
+
   const holder = new THREE.Group();
   holder.add(g);
+  // Strap: from one buckle, around behind the mask on the desk, to the other.
+  holder.updateMatrixWorld(true);
+  const bl = new THREE.Vector3(-0.1, 0.003, -0.02 + maskBend(0.1)).applyMatrix4(g.matrix);
+  const br = new THREE.Vector3(0.1, 0.003, -0.02 + maskBend(0.1)).applyMatrix4(g.matrix);
+  const floor = Math.min(bl.y, br.y) - 0.03;
+  const strapPts = [
+    bl, new THREE.Vector3(bl.x - 0.03, floor + 0.004, bl.z - 0.02), new THREE.Vector3(-0.1, floor, -0.1),
+    new THREE.Vector3(0, floor, -0.14), new THREE.Vector3(0.1, floor, -0.1),
+    new THREE.Vector3(br.x + 0.03, floor + 0.004, br.z - 0.02), br
+  ];
+  const bump = strapBump();
+  holder.add(mesh(ribbonGeometry(strapPts, 0.02, 0.0025), new THREE.MeshPhysicalMaterial({ color: 0x141619, roughness: 0.5, bumpMap: bump, bumpScale: 1.5, sheen: 0.3, side: THREE.DoubleSide })));
   holder.rotation.y = 0.35;
-  holder.position.set(-0.32, DESK_Y, 0.0);
+  holder.position.set(-0.3, DESK_Y, 0.02);
   shadowAll(holder);
+  holder.traverse((o) => { if (o.isMesh && o.material === glassMat) o.castShadow = false; });
   restOn(holder);
   scene.add(prop('mask', holder));
 }
@@ -559,133 +767,239 @@ function buildHeadgear(scene) {
   scene.add(prop('headgear', holder));
 }
 
-/* ---------------- track spikes (stand-in) ---------------- */
-function shoeGeometry() {
-  const s = new THREE.Shape();
-  s.moveTo(-0.132, 0.004);
-  s.lineTo(0.118, 0.0);
-  s.quadraticCurveTo(0.138, 0.002, 0.136, 0.018);
-  s.quadraticCurveTo(0.13, 0.034, 0.1, 0.038);
-  s.quadraticCurveTo(0.04, 0.05, -0.02, 0.07);
-  s.quadraticCurveTo(-0.055, 0.064, -0.09, 0.068);
-  s.quadraticCurveTo(-0.12, 0.074, -0.13, 0.082);
-  s.quadraticCurveTo(-0.146, 0.05, -0.132, 0.004);
-  const geo = new THREE.ExtrudeGeometry(s, { depth: 0.07, bevelEnabled: true, bevelThickness: 0.012, bevelSize: 0.01, bevelSegments: 4, curveSegments: 14 });
-  geo.translate(0, 0, -0.035);
-  const p = geo.attributes.position;
-  const uv = geo.attributes.uv;
-  for (let i = 0; i < p.count; i++) {
-    const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
-    const t = (x + 0.14) / 0.28;                    // 0 at heel, 1 at toe
-    let w = t < 0.65 ? 0.74 + 0.26 * Math.sin((t / 0.65) * Math.PI / 2) : 1 - ((t - 0.65) / 0.35) ** 1.6 * 0.55;
-    w *= 1 - 0.38 * Math.max(0, (y - 0.02) / 0.07) ** 2;
-    p.setZ(i, z * w);
-    uv.setXY(i, t, y / 0.09);
+/* ---------------- track spikes ---------------- */
+// Each shoe's upper is a lofted surface: cross-sections (a squarish arch) swept from heel to toe, with
+// width, height and toe spring varying smoothly. u runs heel -> toe, v runs lateral edge -> top -> medial edge.
+const SHOE_L = 0.27;
+
+// Smooth (cosine) interpolation through [u, value] control points.
+function curve1D(pts, u) {
+  for (let i = 0; i < pts.length - 1; i++) {
+    const [u0, a] = pts[i], [u1, b] = pts[i + 1];
+    if (u <= u1) {
+      const t = (u - u0) / (u1 - u0);
+      return a + (b - a) * (1 - Math.cos(Math.PI * t)) / 2;
+    }
   }
-  geo.computeVertexNormals();
-  return geo;
+  return pts[pts.length - 1][1];
+}
+const SHOE_HW = [[0, 0.031], [0.12, 0.034], [0.35, 0.03], [0.62, 0.045], [0.8, 0.043], [0.93, 0.031], [1, 0.016]];
+const SHOE_HT = [[0, 0.074], [0.1, 0.07], [0.2, 0.06], [0.33, 0.064], [0.45, 0.058], [0.6, 0.048], [0.75, 0.036], [0.9, 0.025], [1, 0.014]];
+const COLLAR = { u: 0.16, ru: 0.15, rv: 0.2 };
+
+function shoeToeSpring(u) { return u > 0.72 ? 0.014 * ((u - 0.72) / 0.28) ** 2 : 0; }
+
+function shoePoint(u, v, target = new THREE.Vector3()) {
+  const heel = Math.sqrt(Math.max(0, 1 - (1 - Math.min(1, u / 0.06)) ** 2));
+  const toe = Math.sqrt(Math.max(0, 1 - Math.max(0, (u - 0.88) / 0.12) ** 2));
+  const hw = curve1D(SHOE_HW, u) * heel * toe;
+  const ht = curve1D(SHOE_HT, u) * toe;
+  const th = v * Math.PI, c = Math.cos(th), sn = Math.sin(th);
+  let y = shoeToeSpring(u) + ht * Math.pow(sn, 0.75);
+  // Sink the collar so the opening reads as a real hole with a padded rim.
+  const du = (u - COLLAR.u) / COLLAR.ru, dv = (v - 0.5) / COLLAR.rv;
+  const d2 = du * du + dv * dv;
+  if (d2 < 1) y -= 0.032 * (1 - d2) ** 1.5;
+  else if (d2 < 1.6) y += 0.0025 * Math.sin(((d2 - 1) / 0.6) * Math.PI);
+  return target.set(-SHOE_L / 2 + u * SHOE_L, y, hw * Math.sign(c) * Math.pow(Math.abs(c), 0.55));
 }
 
-function shoeTexture() {
-  const c = document.createElement('canvas');
-  c.width = 512; c.height = 256;
-  const ctx = c.getContext('2d');
-  ctx.fillStyle = '#cdeb2a';
-  ctx.fillRect(0, 0, 512, 256);
-  // Mesh-like texture.
-  ctx.fillStyle = 'rgba(0,0,0,0.06)';
-  for (let y = 0; y < 256; y += 6) for (let x = (y / 6) % 2 ? 3 : 0; x < 512; x += 6) ctx.fillRect(x, y, 2, 2);
-  ctx.fillStyle = '#16181c';
-  ctx.beginPath();
-  ctx.moveTo(150, 30); ctx.lineTo(200, 30); ctx.lineTo(330, 230); ctx.lineTo(280, 230); ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(225, 30); ctx.lineTo(250, 30); ctx.lineTo(380, 230); ctx.lineTo(355, 230); ctx.fill();
-  ctx.fillRect(0, 0, 512, 26);
-  ctx.fillRect(0, 0, 70, 256);
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  return t;
+function shoeUpperGeometry(segU = 72, segV = 32) {
+  const pos = [], uv = [], idx = [];
+  const p = new THREE.Vector3();
+  for (let i = 0; i <= segU; i++) {
+    for (let j = 0; j <= segV; j++) {
+      const u = i / segU, v = j / segV;
+      shoePoint(u, v, p);
+      pos.push(p.x, p.y, p.z);
+      uv.push(u, v);
+    }
+  }
+  for (let i = 0; i < segU; i++) {
+    for (let j = 0; j < segV; j++) {
+      const a = i * (segV + 1) + j, b = a + segV + 1;
+      idx.push(a, b, a + 1, b, b + 1, a + 1);
+    }
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+  g.setIndex(idx);
+  g.computeVertexNormals();
+  return g;
+}
+
+// Knit upper: colour map (volt with black stripes, heel counter, collar, eyelets) plus a knit bump map,
+// both in the upper's (u, v) space.
+function shoeTextures() {
+  const W = 1024, H = 512;
+  const col = document.createElement('canvas');
+  col.width = W; col.height = H;
+  const c = col.getContext('2d');
+  c.fillStyle = '#c4ea12';
+  c.fillRect(0, 0, W, H);
+  // Darker toe cap and heel counter.
+  c.fillStyle = 'rgba(30,32,36,0.9)';
+  c.fillRect(0, 0, W * 0.1, H);
+  c.fillStyle = 'rgba(160,190,20,0.55)';
+  c.fillRect(W * 0.86, 0, W * 0.14, H);
+  // Bold stripes on both sides (mirrored in v).
+  c.fillStyle = '#16181c';
+  [[0.06, 0.42], [0.58, 0.94]].forEach(([v0, v1]) => {
+    c.beginPath();
+    c.moveTo(W * 0.36, H * v0); c.lineTo(W * 0.44, H * v0); c.lineTo(W * 0.62, H * v1); c.lineTo(W * 0.54, H * v1);
+    c.fill();
+    c.beginPath();
+    c.moveTo(W * 0.47, H * v0); c.lineTo(W * 0.5, H * v0); c.lineTo(W * 0.68, H * v1); c.lineTo(W * 0.65, H * v1);
+    c.fill();
+  });
+  // Tongue panel under the laces.
+  c.fillStyle = '#e6f56a';
+  c.fillRect(W * 0.3, H * 0.4, W * 0.36, H * 0.2);
+  // Collar opening and padded lining.
+  c.fillStyle = '#2a2d33';
+  c.beginPath();
+  c.ellipse(W * COLLAR.u, H * 0.5, W * COLLAR.ru * 1.12, H * COLLAR.rv * 1.12, 0, 0, Math.PI * 2);
+  c.fill();
+  c.fillStyle = '#0b0c0e';
+  c.beginPath();
+  c.ellipse(W * COLLAR.u, H * 0.5, W * COLLAR.ru * 0.9, H * COLLAR.rv * 0.9, 0, 0, Math.PI * 2);
+  c.fill();
+  // Eyelets.
+  c.fillStyle = '#111';
+  for (let u = 0.36; u <= 0.63; u += 0.054) [0.36, 0.64].forEach((v) => { c.beginPath(); c.arc(W * u, H * v, 5, 0, Math.PI * 2); c.fill(); });
+  // Bottom edge where the upper meets the midsole.
+  c.fillStyle = 'rgba(0,0,0,0.25)';
+  c.fillRect(0, 0, W, 6);
+  c.fillRect(0, H - 6, W, 6);
+
+  const bump = document.createElement('canvas');
+  bump.width = W; bump.height = H;
+  const b = bump.getContext('2d');
+  b.fillStyle = '#808080';
+  b.fillRect(0, 0, W, H);
+  // Knit: staggered rows of little "v" stitches, about 3mm each on the shoe.
+  b.lineWidth = 3;
+  for (let y = 0; y < H; y += 12) {
+    for (let x = (y / 12) % 2 ? 6 : 0; x < W; x += 12) {
+      b.strokeStyle = '#c4c4c4';
+      b.beginPath();
+      b.moveTo(x + 1, y + 2); b.lineTo(x + 6, y + 9); b.lineTo(x + 11, y + 2);
+      b.stroke();
+      b.fillStyle = '#505050';
+      b.fillRect(x + 5, y + 10, 2, 2);
+    }
+  }
+  // Stripes are smooth overlays, slightly raised.
+  b.fillStyle = 'rgba(200,200,200,0.7)';
+  [[0.06, 0.42], [0.58, 0.94]].forEach(([v0, v1]) => {
+    b.beginPath();
+    b.moveTo(W * 0.36, H * v0); b.lineTo(W * 0.44, H * v0); b.lineTo(W * 0.62, H * v1); b.lineTo(W * 0.54, H * v1);
+    b.fill();
+  });
+  const map = new THREE.CanvasTexture(col);
+  map.colorSpace = THREE.SRGBColorSpace;
+  map.anisotropy = 8;
+  const bumpMap = new THREE.CanvasTexture(bump);
+  bumpMap.anisotropy = 8;
+  return { map, bumpMap };
 }
 
 // Top-down outline of a sole: round heel, narrow arch, wide forefoot, pointed toe. Shape-y is the shoe's width.
 function footprintShape(scale = 1) {
   const s = new THREE.Shape();
   const k = scale;
-  s.moveTo(-0.135 * k, 0);
-  s.quadraticCurveTo(-0.137 * k, 0.036 * k, -0.1 * k, 0.037 * k);
-  s.quadraticCurveTo(-0.04 * k, 0.03 * k, 0.03 * k, 0.047 * k);
-  s.quadraticCurveTo(0.11 * k, 0.05 * k, 0.142 * k, 0.006 * k);
-  s.quadraticCurveTo(0.146 * k, -0.002 * k, 0.14 * k, -0.01 * k);
-  s.quadraticCurveTo(0.1 * k, -0.046 * k, 0.03 * k, -0.045 * k);
-  s.quadraticCurveTo(-0.04 * k, -0.034 * k, -0.1 * k, -0.035 * k);
-  s.quadraticCurveTo(-0.137 * k, -0.034 * k, -0.135 * k, 0);
+  s.moveTo(-0.137 * k, 0);
+  s.quadraticCurveTo(-0.139 * k, 0.034 * k, -0.1 * k, 0.036 * k);
+  s.quadraticCurveTo(-0.04 * k, 0.031 * k, 0.03 * k, 0.047 * k);
+  s.quadraticCurveTo(0.11 * k, 0.05 * k, 0.138 * k, 0.012 * k);
+  s.quadraticCurveTo(0.146 * k, 0.0, 0.138 * k, -0.012 * k);
+  s.quadraticCurveTo(0.1 * k, -0.047 * k, 0.03 * k, -0.046 * k);
+  s.quadraticCurveTo(-0.04 * k, -0.033 * k, -0.1 * k, -0.035 * k);
+  s.quadraticCurveTo(-0.139 * k, -0.034 * k, -0.137 * k, 0);
   return s;
+}
+
+// Bend a sole-like geometry up at the toe to match the upper's toe spring.
+function applyToeSpring(geo) {
+  const p = geo.attributes.position;
+  for (let i = 0; i < p.count; i++) {
+    const u = (p.getX(i) + SHOE_L / 2) / SHOE_L;
+    p.setY(i, p.getY(i) + shoeToeSpring(Math.min(1, Math.max(0, u))));
+  }
+  geo.computeVertexNormals();
+  return geo;
 }
 
 function buildSpikes(scene) {
   const holder = new THREE.Group();
-  const geo = shoeGeometry();
-  const upper = std(0xffffff, { map: shoeTexture(), roughness: 0.6 });
-  const soleMat = std(0xf2f2ee, { roughness: 0.5 });
-  const plateMat = std(0x141518, { roughness: 0.35 });
-  const pinMat = std(0x9aa0a8, { metalness: 1, roughness: 0.3 });
-  const laceMat = std(0xffffff, { roughness: 0.8 });
-  const holeMat = std(0x0c0c0e, { roughness: 0.95 });
-  const soleGeo = new THREE.ExtrudeGeometry(footprintShape(1.02), { depth: 0.01, bevelEnabled: true, bevelThickness: 0.002, bevelSize: 0.002, bevelSegments: 2, curveSegments: 16 });
+  const tex = shoeTextures();
+  const upperMat = new THREE.MeshPhysicalMaterial({ map: tex.map, bumpMap: tex.bumpMap, bumpScale: 0.9, roughness: 0.82, sheen: 0.25, sheenColor: new THREE.Color(0xf4ffb0), sheenRoughness: 0.7, side: THREE.DoubleSide });
+  const soleMat = new THREE.MeshStandardMaterial({ color: 0xf4f3ee, roughness: 0.55 });
+  const plateMat = new THREE.MeshPhysicalMaterial({ color: 0x15161a, roughness: 0.25, clearcoat: 0.6 });
+  const pinMat = std(0xb5bbc3, { metalness: 1, roughness: 0.25 });
+  const laceMat = std(0xfafafa, { roughness: 0.75 });
+  const tabMat = std(0x16181c, { roughness: 0.5 });
+
+  const upperGeo = shoeUpperGeometry();
+  const SOLE_H = 0.009;
+  const soleGeo = new THREE.ExtrudeGeometry(footprintShape(1.0), { depth: SOLE_H, bevelEnabled: true, bevelThickness: 0.0025, bevelSize: 0.0025, bevelSegments: 3, curveSegments: 20, steps: 1 });
   soleGeo.rotateX(Math.PI / 2);
-  const plateShape = new THREE.Shape(footprintShape(1.0).getPoints(40).filter((p) => p.x > -0.02));
-  const plateGeo = new THREE.ExtrudeGeometry(plateShape, { depth: 0.003, bevelEnabled: false });
+  soleGeo.translate(0, SOLE_H, 0);
+  applyToeSpring(soleGeo);
+  const plateShape = new THREE.Shape(footprintShape(0.985).getPoints(60).filter((pt) => pt.x > -0.02));
+  const plateGeo = new THREE.ExtrudeGeometry(plateShape, { depth: 0.003, bevelEnabled: true, bevelThickness: 0.001, bevelSize: 0.001, bevelSegments: 1 });
   plateGeo.rotateX(Math.PI / 2);
+  plateGeo.translate(0, -0.0018, 0);
+  applyToeSpring(plateGeo);
 
-  // Find points on the upper's top surface so laces and the collar sit right on it.
-  const probe = new THREE.Mesh(geo);
-  const ray = new THREE.Raycaster();
-  const down = new THREE.Vector3(0, -1, 0);
-  function surface(x) {
-    ray.set(new THREE.Vector3(x, 1, 0), down);
-    const h = ray.intersectObject(probe)[0];
-    return h ? { p: h.point, n: h.face.normal.clone() } : null;
-  }
-
-  const make = () => {
-    const shoe = new THREE.Group();
-    shoe.add(mesh(soleGeo, soleMat, [0, 0.012, 0]));
-    shoe.add(mesh(plateGeo, plateMat, [0, 0.0025, 0]));
-    const up = mesh(geo, upper, [0, 0.011, 0]);
-    up.scale.set(0.98, 1, 0.92);
-    shoe.add(up);
-    for (let i = 0; i < 7; i++) {
-      const x = 0.0 + (i % 4) * 0.035, z = i < 4 ? 0.022 : -0.022;
-      shoe.add(mesh(new THREE.ConeGeometry(0.0028, 0.008, 8), pinMat, [x + (i < 4 ? 0 : 0.017), -0.004, z * (1 - x * 3)], [Math.PI, 0, 0]));
-    }
-    const collar = surface(-0.088);
-    if (collar) {
-      const o = mesh(new THREE.CircleGeometry(1, 28), holeMat, null, null, { cast: false });
-      o.position.copy(collar.p).addScaledVector(collar.n, 0.0015);
-      o.position.y += 0.011;
-      o.lookAt(o.position.clone().add(collar.n));
-      o.scale.set(0.034, 0.021, 1);
-      o.rotateZ(Math.PI / 2);
-      shoe.add(o);
-    }
-    [-0.04, -0.02, 0.0, 0.02, 0.04].forEach((x, i) => {
-      const h = surface(x);
-      if (!h) return;
-      const lace = mesh(new THREE.BoxGeometry(0.003, 0.0022, 0.03 - i * 0.002), laceMat, null, null, { cast: false });
-      lace.position.copy(h.p).addScaledVector(h.n, 0.0012);
-      lace.position.y += 0.011;
-      lace.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), h.n);
-      lace.rotateY(i % 2 ? 0.25 : -0.25);
-      shoe.add(lace);
+  // Laces criss-cross between two eyelet rows, arching over the tongue, finished with a bow.
+  const laces = [];
+  const us = [];
+  for (let u = 0.36; u <= 0.63; u += 0.054) us.push(u);
+  const P = (u, v, lift = 0) => shoePoint(u, v).add(new THREE.Vector3(0, lift, 0));
+  for (let i = 0; i < us.length - 1; i++) {
+    const m = (us[i] + us[i + 1]) / 2;
+    [[0.36, 0.64], [0.64, 0.36]].forEach(([va, vb]) => {
+      laces.push(new THREE.QuadraticBezierCurve3(P(us[i], va, 0.0015), P(m, 0.5, 0.006), P(us[i + 1], vb, 0.0015)));
     });
+  }
+  laces.push(new THREE.QuadraticBezierCurve3(P(us[us.length - 1], 0.36, 0.0015), P(us[us.length - 1], 0.5, 0.004), P(us[us.length - 1], 0.64, 0.0015)));
+  const top = P(us[0], 0.5, 0.004);
+
+  const make = (seed) => {
+    const shoe = new THREE.Group();
+    shoe.add(mesh(upperGeo, upperMat, [0, SOLE_H + 0.001, 0]));
+    shoe.add(mesh(soleGeo, soleMat));
+    shoe.add(mesh(plateGeo, plateMat));
+    [[0.0, 0.026], [0.042, 0.03], [0.084, 0.026], [0.02, -0.026], [0.062, -0.03], [0.104, -0.022], [0.118, 0.0]].forEach(([x, z]) => {
+      const u = (x + SHOE_L / 2) / SHOE_L;
+      shoe.add(mesh(new THREE.ConeGeometry(0.0026, 0.007, 10), pinMat, [x, -0.0055 + shoeToeSpring(u), z], [Math.PI, 0, 0]));
+    });
+    const laceGroup = new THREE.Group();
+    laces.forEach((c) => laceGroup.add(mesh(new THREE.TubeGeometry(c, 16, 0.0016, 6), laceMat, null, null, { cast: false })));
+    // Bow: two loops and two tails at the top eyelets.
+    [-1, 1].forEach((side) => {
+      const loop = mesh(new THREE.TorusGeometry(0.011, 0.0016, 6, 20), laceMat, [top.x - 0.008, top.y + 0.003, top.z + side * 0.012], [Math.PI / 2 - 0.4, side * 0.5, 0], { cast: false });
+      loop.scale.set(1, 0.6, 1);
+      laceGroup.add(loop);
+      const tail = new THREE.CatmullRomCurve3([top.clone(), top.clone().add(new THREE.Vector3(-0.015, -0.004, side * 0.02)), top.clone().add(new THREE.Vector3(-0.022, -0.016, side * 0.034))]);
+      laceGroup.add(mesh(new THREE.TubeGeometry(tail, 10, 0.0016, 6), laceMat, null, null, { cast: false }));
+    });
+    laceGroup.position.y = SOLE_H + 0.001;
+    shoe.add(laceGroup);
+    // Heel pull tab.
+    const hp = shoePoint(0.012, 0.5);
+    shoe.add(mesh(new THREE.TorusGeometry(0.009, 0.0022, 6, 14, Math.PI), tabMat, [hp.x - 0.003, hp.y + SOLE_H - 0.004, 0], [0, Math.PI / 2, 0]));
     return shoe;
   };
-  const a = make();
-  a.position.set(0, 0.004, -0.05);
-  a.rotation.y = 0.05;
-  const b = make();
-  b.position.set(0.035, 0.004, 0.05);
-  b.rotation.y = -0.18;
+  const a = make(1);
+  a.position.set(0, 0.0035, -0.052);
+  a.rotation.y = 0.04;
+  const b = make(2);
+  b.position.set(0.03, 0.0035, 0.052);
+  b.rotation.y = -0.2;
+  b.scale.z = -1; // the other foot
   holder.add(a, b);
   holder.position.set(-0.5, DESK_Y, -0.2);
   holder.rotation.y = 0.3;
@@ -727,8 +1041,8 @@ function buildDrill(scene) {
 
 /* ---------------- lights ---------------- */
 function buildLights(scene, parts) {
-  scene.add(new THREE.HemisphereLight(0x9fb2d8, 0x2a1d14, 0.55));
-  const key = new THREE.DirectionalLight(0xfff0dd, 1.15);
+  scene.add(new THREE.HemisphereLight(0xfff0dc, 0x8a6a4e, 1.05));
+  const key = new THREE.DirectionalLight(0xfff4e6, 0.95);
   key.position.set(0.9, 2.4, 1.6);
   key.target.position.set(0, DESK_Y, 0);
   key.castShadow = true;
@@ -743,9 +1057,25 @@ function buildLights(scene, parts) {
   key.shadow.normalBias = 0.01;
   key.shadow.radius = 5;
   scene.add(key, key.target);
-  const moon = new THREE.DirectionalLight(0x8fa8ff, 0.45);
-  moon.position.set(-1.4, 1.6, -1.0);
-  scene.add(moon);
+
+  // Late-afternoon sun, aimed through the window: a spotlight from outside whose cone just covers the
+  // opening, so the wall's shadow carves out a window-shaped patch (mullions and all) on the desk.
+  const { cx, cy, w, h } = WINDOW;
+  const dir = new THREE.Vector3(0.95, -2.1, 1.5).normalize();
+  const winC = new THREE.Vector3(cx, cy, WALL_Z);
+  const dist = 3.2;
+  const sun = new THREE.SpotLight(0xffc98a, 4.2, 0, Math.atan((Math.hypot(w, h) / 2 + 0.06) / dist), 0.3, 0);
+  sun.position.copy(winC).addScaledVector(dir, -dist);
+  sun.target.position.copy(winC).addScaledVector(dir, 1.2);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(1024, 1024);
+  sun.shadow.camera.near = 1.5;
+  sun.shadow.camera.far = 7;
+  sun.shadow.bias = -0.0004;
+  sun.shadow.normalBias = 0.02;
+  sun.shadow.radius = 3;
+  scene.add(sun, sun.target);
+
   // The CRT's own glow, bright only while it's on.
   const glow = new THREE.PointLight(0x9fd0ff, 0, 1.6, 1.6);
   glow.position.set(0, DESK_Y + 0.22, 0.38);
@@ -756,10 +1086,11 @@ function buildLights(scene, parts) {
 /* ---------------- entry ---------------- */
 export function buildScene(data) {
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color(0x0a0c12);
-  scene.fog = new THREE.Fog(0x0a0c12, 3.5, 9);
+  scene.background = new THREE.Color(0xe9dcc8);
+  scene.fog = new THREE.Fog(0xe9dcc8, 4.5, 12);
   const parts = {};
   buildRoom(scene, parts);
+  buildPhotoString(scene, parts, data.photos || []);
   buildDesk(scene);
   buildMonitor(scene, parts);
   buildKeyboard(scene);
@@ -768,7 +1099,6 @@ export function buildScene(data) {
   buildFloppies(scene);
   buildResume(scene, data.profile, data.projects);
   buildSketchbook(scene);
-  buildMug(scene);
   buildLamp(scene, parts);
   buildMask(scene);
   buildHeadgear(scene);

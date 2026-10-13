@@ -5,6 +5,7 @@
 //        'toggle' flip something on the spot (the lamp)
 // view:  optional camera tweaks: dir (direction from the object toward the camera), zoom (distance multiplier)
 // actions: buttons on the card. { app } opens an app on the PC, { url } opens a link.
+// photo:   id of a photo in VFS.PHOTOS (os/fs.js) pinned to the card; gallery: several, as thumbnails.
 
 const SCUBAGO = 'https://github.com/OmarOzalp/scubago';
 
@@ -22,6 +23,7 @@ export const PROPS = {
       'My favorite office is underwater, where nobody can send me Slack messages.',
       'I liked diving so much I built ScubaGo: a map of the world\'s dive sites and the marine life people actually see there. "Where can I see a whale shark?" deserved a better answer than a forum thread from 2011.'
     ],
+    photo: 'dive-crew',
     actions: [{ label: 'Load ScubaGo on the PC', app: 'projects' }, { label: 'ScubaGo on GitHub', url: SCUBAGO }],
     view: { zoom: 1.5 }
   },
@@ -34,6 +36,7 @@ export const PROPS = {
       'Wrestling taught me to stay calm while someone is actively trying to fold me in half.',
       'It also taught me discipline, conditioning, and a deep respect for the scale on weigh-in day. My problem-solving style still comes from the mat: good position first, keep moving, never stop working.'
     ],
+    photo: 'wrestling',
     actions: [],
     view: { zoom: 1.45 }
   },
@@ -69,8 +72,9 @@ export const PROPS = {
     title: 'Power drill',
     body: [
       'For the projects that don\'t compile: shelves, mounts, and the occasional "how hard could it be?"',
-      'ECE in theory, power tools in practice. Engineering, but louder.'
+      'ECE in theory, power tools in practice. Engineering, but louder. Latest build: letters taller than I am.'
     ],
+    photo: 'workshop',
     actions: [],
     view: { zoom: 1.45 }
   },
@@ -95,6 +99,7 @@ export const PROPS = {
       'I study Electrical & Computer Engineering, Computer Science and Math at Duke. Yes, all three. Yes, on purpose.',
       'I\'m also a brother of Delta Sigma Pi, Duke\'s co-ed business fraternity, because engineers should know what a P&L is too.'
     ],
+    photo: 'me',
     actions: [{ label: 'See my experience', app: 'experience' }, { label: 'About me', app: 'about' }],
     view: { dir: [0, 0.15, 1], zoom: 1.25 }
   },
@@ -123,15 +128,16 @@ export const PROPS = {
     view: { zoom: 1.05, dir: [0, 1.6, 0.55] }
   },
 
-  mug: {
-    name: 'Mug',
-    kicker: 'Fuel',
-    title: 'World\'s okayest diver',
+  photos: {
+    name: 'Photo string',
+    kicker: 'Camera roll',
+    title: 'Life outside the terminal',
     body: [
-      'Contents: 60% coffee, 40% ambition.',
-      'Refilled hourly during finals week.'
+      'A few favorites from off the keyboard: a dive trip out of Cairns, a yellowtail that did not come quietly, the team rushing the mat, and a day in the shop with a very large saw.',
+      'Click one to open it on the computer.'
     ],
-    actions: [],
-    view: { zoom: 1.7 }
+    gallery: ['dive-crew', 'yellowtail', 'wrestling', 'workshop'],
+    actions: [{ label: 'Open My Pictures on the PC', app: 'pictures' }],
+    view: { dir: [0, 0.12, 1], zoom: 0.85 }
   }
 };

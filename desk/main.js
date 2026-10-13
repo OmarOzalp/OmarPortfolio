@@ -54,10 +54,10 @@ async function start3D() {
   renderer.shadowMap.type = THREE.PCFShadowMap;
   setMaxAnisotropy(Math.min(8, renderer.capabilities.getMaxAnisotropy()));
 
-  const { scene, parts } = buildScene({ profile: window.VFS.PROFILE, projects: window.VFS.PROJECTS });
+  const { scene, parts } = buildScene({ profile: window.VFS.PROFILE, projects: window.VFS.PROJECTS, photos: window.VFS.PHOTOS });
   const pmrem = new THREE.PMREMGenerator(renderer);
   scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
-  scene.environmentIntensity = 0.32;
+  scene.environmentIntensity = 0.45;
 
   const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.01, 30);
 
@@ -129,7 +129,7 @@ async function start3D() {
   function vfovTan() { return Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2); }
 
   function overviewView() {
-    const target = new THREE.Vector3(0, DESK_Y + 0.26, -0.1);
+    const target = new THREE.Vector3(0, DESK_Y + 0.3, -0.1);
     const dir = new THREE.Vector3(0, 0.36, 1).normalize();
     const d = Math.max(0.98 / hfovTan(), 0.6 / vfovTan());
     return { pos: target.clone().addScaledVector(dir, d), target };
@@ -270,10 +270,12 @@ async function start3D() {
     else { sound.play('power'); post({ type: 'power', on: false }); if (mode === 'screen') goOverview(); }
   }
 
-  function openOnPC(app) {
+  function openOnPC(app, opts) {
     goScreen();
-    post({ type: 'open', app });
+    post({ type: 'open', app, opts });
   }
+  const photoById = (id) => window.VFS.photo(id);
+  const viewPhoto = (id) => openOnPC('photo', { key: 'viewer', id });
 
   window.addEventListener('message', (e) => {
     if (e.origin !== location.origin || !e.data || !e.data.ozalp) return;
@@ -293,7 +295,7 @@ async function start3D() {
     const L = parts.lamp;
     L.on = !L.on;
     sound.play('click');
-    L.light.intensity = L.on ? 5.5 : 0;
+    L.light.intensity = L.on ? L.intensity : 0;
     L.bulb.emissiveIntensity = L.on ? 3 : 0;
     dirty = true;
   }
@@ -310,6 +312,30 @@ async function start3D() {
       const el = document.createElement('p');
       el.textContent = p;
       body.appendChild(el);
+    });
+    const photoBtn = card.querySelector('.card-photo');
+    const ph = def.photo && photoById(def.photo);
+    photoBtn.hidden = !ph;
+    if (ph) {
+      photoBtn.querySelector('img').src = ph.thumb;
+      photoBtn.querySelector('img').alt = ph.caption;
+      photoBtn.querySelector('.card-photo-cap').textContent = ph.caption;
+      photoBtn.onclick = () => viewPhoto(ph.id);
+    }
+    const gal = card.querySelector('.card-gallery');
+    gal.innerHTML = '';
+    gal.hidden = !def.gallery;
+    (def.gallery || []).forEach((id) => {
+      const p = photoById(id);
+      if (!p) return;
+      const b = document.createElement('button');
+      b.title = p.caption + ' (open on the computer)';
+      const img = document.createElement('img');
+      img.src = p.thumb;
+      img.alt = p.caption;
+      b.appendChild(img);
+      b.addEventListener('click', () => viewPhoto(id));
+      gal.appendChild(b);
     });
     const acts = card.querySelector('.card-actions');
     acts.innerHTML = '';
@@ -389,7 +415,7 @@ async function start3D() {
     const moved = Math.hypot(e.clientX - down.x, e.clientY - down.y);
     const quick = performance.now() - down.t < 700;
     down = null;
-    if (moved > 8 || !quick || mode === 'intro' || cam.tween) return;
+    if (moved > 8 || !quick || mode === 'intro') return;
     const hit = pick(e.clientX, e.clientY);
     markInteracted();
     if (mode === 'screen') { if (!hit || hit.id !== 'computer') goOverview(); return; }
@@ -413,7 +439,7 @@ async function start3D() {
 
   // Keyboard / screen-reader navigation for every prop.
   const nav = $('prop-nav');
-  const navOrder = ['computer', 'resume', 'mask', 'headgear', 'spikes', 'sketchbook', 'drill', 'mouse', 'floppies', 'pennant', 'mug', 'lamp'];
+  const navOrder = ['computer', 'resume', 'photos', 'mask', 'headgear', 'spikes', 'sketchbook', 'drill', 'mouse', 'floppies', 'pennant', 'lamp'];
   navOrder.forEach((id) => {
     const b = document.createElement('button');
     b.textContent = id === 'computer' ? 'Use the computer' : (PROPS[id].kind === 'toggle' ? 'Toggle the desk lamp' : 'Inspect: ' + PROPS[id].name);
