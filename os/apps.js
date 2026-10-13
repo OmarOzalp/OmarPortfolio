@@ -8,15 +8,8 @@
   // Drop a PDF at assets/resume.pdf and set this to enable the Download button.
   var RESUME_PDF = null; // '../assets/resume.pdf'
 
-  // My Pictures. Add photos to assets/photos/ and list them here: { file, caption, src: '../assets/photos/x.jpg' }.
-  var PICTURES = [
-    { file: 'dive_trip.jpg', caption: 'Somewhere ~18m down' },
-    { file: 'wrestling.jpg', caption: 'On the mat' },
-    { file: 'track_meet.jpg', caption: 'Spikes on, phone off' },
-    { file: 'sketch_01.jpg', caption: 'From the sketchbook' },
-    { file: 'duke.jpg', caption: 'Duke' },
-    { file: 'home.jpg', caption: 'Kuwait & Dubai' }
-  ];
+  // My Pictures comes from VFS.PHOTOS (os/fs.js). The OS lives in os/, so asset paths need a '../'.
+  function asset(path) { return '../' + path; }
 
   function openUrl(url) {
     if (url.indexOf('mailto:') === 0) {
@@ -50,8 +43,7 @@
     bodyClass: 'padded',
     render: function() {
       return '<div class="about-wrap">' +
-        '<div class="about-photo"><img src="../assets/photos/me.jpg" alt="Omar Ozalp" style="width:100%;height:100%;object-fit:cover;display:block" ' +
-          'onerror="this.parentNode.textContent=\'me.jpg\\n(photo loading since 1998)\'"></div>' +
+        '<div class="about-photo"><img src="' + asset(VFS.photo('me').thumb) + '" alt="Omar Ozalp at Duke Chapel"></div>' +
         '<div>' +
           '<h2>' + esc(P.name) + '</h2>' +
           '<p><b>' + esc(P.headline) + '</b></p>' +
@@ -139,11 +131,14 @@
     var app = VFS.appOf(abs);
     if (app) return OS.apps[app] && OS.apps[app].icon || 'run';
     var ext = name.split('.').pop();
+    if (ext === 'jpg') return 'pictures';
     if (ext === 'url') return 'url';
     if (ext === 'doc') return 'doc';
     return 'txt';
   }
   function openPath(abs) {
+    var content = VFS.read(abs) || '';
+    if (content.indexOf('#!photo:') === 0) { openPhoto(content.slice(8)); return; }
     var app = VFS.appOf(abs);
     if (app) { OS.wm.open(app); return; }
     if (abs.slice(-4) === '.url') { openUrl(VFS.read(abs).trim()); return; }
@@ -338,43 +333,81 @@
   });
 
   /* ---------------- My Pictures ---------------- */
+  function openPhoto(id) {
+    var p = VFS.photo(id);
+    if (p) OS.wm.open('photo', { key: 'viewer', id: id });
+  }
+
   OS.registerApp('pictures', {
     title: 'My Pictures', icon: 'pictures',
-    width: 560, height: 420,
+    width: 600, height: 460,
     render: function() {
       return '<div class="explorer">' +
         '<div class="explorer-view" style="padding:10px"><div class="pics-grid">' +
-        PICTURES.map(function(p, i) {
-          return '<button class="pic-card btn" data-i="' + i + '" style="padding:6px;min-height:0">' +
-            '<div class="pic-frame">' + (p.src ? '<img src="' + esc(p.src) + '" alt="" style="width:100%;height:100%;object-fit:cover">' : OS.icon('camera')) + '</div>' +
-            '<div><b>' + esc(p.file) + '</b></div><div>' + esc(p.caption) + '</div></button>';
+        VFS.PHOTOS.map(function(p) {
+          return '<button class="pic-card" data-id="' + esc(p.id) + '">' +
+            '<div class="pic-frame"><img src="' + esc(asset(p.thumb)) + '" alt="' + esc(p.caption) + '" loading="lazy"></div>' +
+            '<div class="pic-name">' + esc(p.file) + '</div><div class="pic-cap">' + esc(p.caption) + '</div></button>';
         }).join('') +
         '</div></div>' +
-        '<div class="statusbar"><div class="status-field">' + PICTURES.length + ' object(s)</div></div>' +
+        '<div class="statusbar"><div class="status-field">' + VFS.PHOTOS.length + ' object(s)</div><div class="status-field" style="flex:0 0 160px">Double-click to view</div></div>' +
       '</div>';
     },
     onMount: function(win) {
-      win.body.querySelectorAll('[data-i]').forEach(function(b) {
-        b.addEventListener('click', function() {
-          var p = PICTURES[+b.getAttribute('data-i')];
-          if (p.src) OS.wm.open('photo', { key: p.file, pic: p });
-          else OS.alert({ title: p.file, icon: 'info', message: 'Omar hasn\'t developed this roll of film yet.\nCheck back soon!' });
+      win.body.querySelectorAll('[data-id]').forEach(function(b) {
+        b.addEventListener('click', function(e) {
+          win.body.querySelectorAll('.pic-card.selected').forEach(function(x) { x.classList.remove('selected'); });
+          b.classList.add('selected');
+          if (OS.isMobile() || e.pointerType === 'touch' || e.detail === 0) openPhoto(b.getAttribute('data-id'));
         });
+        b.addEventListener('dblclick', function() { openPhoto(b.getAttribute('data-id')); });
       });
     }
   });
 
+  // Image Viewer: one window that pages through VFS.PHOTOS.
   OS.registerApp('photo', {
     title: 'Image Viewer', icon: 'pictures',
-    width: 560, height: 460,
-    render: function(opts) {
-      var p = opts.pic;
-      return '<div style="height:100%;display:flex;flex-direction:column">' +
-        '<div class="sunken" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;background:#000">' +
-        '<img src="' + esc(p.src) + '" alt="' + esc(p.caption) + '" style="max-width:100%;max-height:100%"></div>' +
-        '<div class="statusbar"><div class="status-field">' + esc(p.caption) + '</div></div></div>';
+    width: 620, height: 540,
+    minWidth: 300, minHeight: 260,
+    render: function() {
+      return '<div class="viewer">' +
+        '<div class="toolbar">' +
+          '<button class="tool-btn" data-act="prev">← Previous</button>' +
+          '<button class="tool-btn" data-act="next">Next →</button>' +
+        '</div>' +
+        '<div class="viewer-stage sunken"><img alt=""></div>' +
+        '<div class="statusbar"><div class="status-field viewer-cap"></div><div class="status-field viewer-pos" style="flex:0 0 70px"></div></div>' +
+      '</div>';
     },
-    onMount: function(win, opts) { win.setTitle(opts.pic.file + ' - Image Viewer'); }
+    onMount: function(win, opts) {
+      var idx = 0;
+      VFS.PHOTOS.forEach(function(p, i) { if (p.id === opts.id) idx = i; });
+      var img = win.body.querySelector('.viewer-stage img');
+      function show(i) {
+        idx = (i + VFS.PHOTOS.length) % VFS.PHOTOS.length;
+        var p = VFS.PHOTOS[idx];
+        img.src = asset(p.src);
+        img.alt = p.caption;
+        win.setTitle(p.file + ' - Image Viewer');
+        win.body.querySelector('.viewer-cap').textContent = p.caption;
+        win.body.querySelector('.viewer-pos').textContent = (idx + 1) + ' of ' + VFS.PHOTOS.length;
+      }
+      win.body.querySelector('[data-act="prev"]').addEventListener('click', function() { show(idx - 1); });
+      win.body.querySelector('[data-act="next"]').addEventListener('click', function() { show(idx + 1); });
+      function onKey(e) {
+        if (!win.isActive()) return;
+        if (e.key === 'ArrowLeft') show(idx - 1);
+        else if (e.key === 'ArrowRight') show(idx + 1);
+      }
+      document.addEventListener('keydown', onKey);
+      win.onClose(function() { document.removeEventListener('keydown', onKey); });
+      win._show = show;
+      show(idx);
+    },
+    onReopen: function(win, opts) {
+      VFS.PHOTOS.forEach(function(p, i) { if (p.id === opts.id && win._show) win._show(i); });
+    }
   });
 
   /* ---------------- Display Properties ---------------- */

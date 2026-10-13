@@ -99,19 +99,38 @@ export function woodTexture() {
   return toTexture(c);
 }
 
-/* Painted plaster wall. */
-export function wallTexture() {
+/* Painted plaster, tinted with the given colour. UVs are in meters; one tile covers 1.5m. */
+export function paintTexture(color) {
   const [c, ctx] = canvas(512, 512);
   const rand = rng(11);
-  ctx.fillStyle = '#4a5160';
+  ctx.fillStyle = color;
   ctx.fillRect(0, 0, 512, 512);
-  speckle(ctx, 512, 512, 14000, ['rgba(0,0,0,0.035)', 'rgba(255,255,255,0.025)'], rand, 1);
-  // Soft roller marks.
-  for (let i = 0; i < 40; i++) {
-    ctx.fillStyle = `rgba(${rand() < 0.5 ? '0,0,0' : '255,255,255'},0.018)`;
-    ctx.fillRect(rand() * 512, 0, 20 + rand() * 60, 512);
+  speckle(ctx, 512, 512, 16000, ['rgba(0,0,0,0.03)', 'rgba(255,255,255,0.05)'], rand, 1);
+  for (let i = 0; i < 50; i++) {
+    ctx.fillStyle = `rgba(${rand() < 0.5 ? '0,0,0' : '255,255,255'},0.022)`;
+    ctx.beginPath();
+    ctx.ellipse(rand() * 512, rand() * 512, 30 + rand() * 90, 14 + rand() * 40, rand() * Math.PI, 0, Math.PI * 2);
+    ctx.fill();
   }
-  return toTexture(c, { repeat: [3, 2] });
+  return toTexture(c, { repeat: [1 / 1.5, 1 / 1.5] });
+}
+
+/* White beadboard wainscoting: vertical boards with a groove every ~3.75cm. One tile = 0.6m. */
+export function beadboardTexture() {
+  const [c, ctx] = canvas(512, 512);
+  const rand = rng(13);
+  ctx.fillStyle = '#f3f0e8';
+  ctx.fillRect(0, 0, 512, 512);
+  speckle(ctx, 512, 512, 5000, ['rgba(0,0,0,0.025)'], rand, 1);
+  for (let x = 0; x < 512; x += 32) {
+    ctx.fillStyle = 'rgba(0,0,0,0.22)';
+    ctx.fillRect(x, 0, 2, 512);
+    ctx.fillStyle = 'rgba(255,255,255,0.8)';
+    ctx.fillRect(x + 2, 0, 2, 512);
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.fillRect(x + 4, 0, 6, 512);
+  }
+  return toTexture(c, { repeat: [1 / 0.6, 1] });
 }
 
 export function floorTexture() {
@@ -130,90 +149,35 @@ export function floorTexture() {
   return toTexture(c, { repeat: [6, 6] });
 }
 
-/* Night view out the window: a gulf skyline with one very tall tower, a moon and stars. */
-export function skylineTexture() {
-  const W = 1024, H = 768;
+/* A polaroid: white card, handwritten caption, and the photo cropped square ("cover").
+   The photo loads asynchronously and is painted in when it arrives. */
+export function polaroidTexture(url, caption, seed = 1) {
+  const W = 440, H = 528, P = 26, S = W - P * 2;
   const [c, ctx] = canvas(W, H);
-  const rand = rng(21);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#060a1c');
-  g.addColorStop(0.55, '#16224a');
-  g.addColorStop(0.8, '#3a3156');
-  g.addColorStop(1, '#5a3a4a');
-  ctx.fillStyle = g;
+  const rand = rng(seed);
+  ctx.fillStyle = '#fbfaf5';
   ctx.fillRect(0, 0, W, H);
-  for (let i = 0; i < 260; i++) {
-    ctx.fillStyle = `rgba(255,255,255,${0.2 + rand() * 0.8})`;
-    const s = rand() < 0.08 ? 2 : 1;
-    ctx.fillRect(rand() * W, rand() * H * 0.6, s, s);
-  }
-  // Moon.
-  const mg = ctx.createRadialGradient(780, 150, 10, 780, 150, 120);
-  mg.addColorStop(0, 'rgba(255,248,220,0.35)');
-  mg.addColorStop(1, 'rgba(255,248,220,0)');
-  ctx.fillStyle = mg;
-  ctx.fillRect(600, 0, 400, 320);
-  ctx.fillStyle = '#fff6da';
-  ctx.beginPath();
-  ctx.arc(780, 150, 38, 0, Math.PI * 2);
-  ctx.fill();
-  // Skyline silhouettes with lit windows.
-  const base = H * 0.92;
-  const buildings = [];
-  let x = -10;
-  while (x < W) {
-    const w = 30 + rand() * 60;
-    const h = 60 + rand() * 170;
-    buildings.push([x, w, h]);
-    x += w + rand() * 6;
-  }
-  buildings.forEach(([bx, bw, bh]) => {
-    ctx.fillStyle = '#0b0f1e';
-    ctx.fillRect(bx, base - bh, bw, bh + 40);
-    for (let wy = base - bh + 8; wy < base; wy += 10) {
-      for (let wx = bx + 5; wx < bx + bw - 5; wx += 8) {
-        if (rand() < 0.28) {
-          ctx.fillStyle = rand() < 0.8 ? 'rgba(255,214,140,0.8)' : 'rgba(170,210,255,0.8)';
-          ctx.fillRect(wx, wy, 3, 4);
-        }
-      }
-    }
-  });
-  // The tall one.
-  ctx.fillStyle = '#0b0f1e';
-  ctx.beginPath();
-  const tx = 330;
-  ctx.moveTo(tx - 34, base);
-  ctx.lineTo(tx - 26, base - 220);
-  ctx.lineTo(tx - 16, base - 330);
-  ctx.lineTo(tx - 8, base - 430);
-  ctx.lineTo(tx - 2, base - 540);
-  ctx.lineTo(tx, base - 610);
-  ctx.lineTo(tx + 2, base - 540);
-  ctx.lineTo(tx + 9, base - 420);
-  ctx.lineTo(tx + 18, base - 310);
-  ctx.lineTo(tx + 28, base - 200);
-  ctx.lineTo(tx + 36, base);
-  ctx.fill();
-  for (let wy = base - 520; wy < base; wy += 9) {
-    const half = 2 + (wy - (base - 600)) / 600 * 30;
-    for (let wx = tx - half; wx < tx + half; wx += 6) {
-      if (rand() < 0.35) {
-        ctx.fillStyle = 'rgba(255,224,160,0.85)';
-        ctx.fillRect(wx, wy, 2, 3);
-      }
-    }
-  }
-  ctx.fillStyle = '#ff4040';
-  ctx.fillRect(tx - 1, base - 614, 3, 3);
-  // Water reflection band.
-  ctx.fillStyle = '#070b18';
-  ctx.fillRect(0, base, W, H - base);
-  for (let i = 0; i < 140; i++) {
-    ctx.fillStyle = `rgba(255,210,140,${rand() * 0.35})`;
-    ctx.fillRect(rand() * W, base + 4 + rand() * (H - base - 6), 6 + rand() * 20, 1);
-  }
-  return toTexture(c);
+  speckle(ctx, W, H, 1500, ['rgba(0,0,0,0.03)'], rand, 2);
+  ctx.fillStyle = '#d9d4c8';
+  ctx.fillRect(P, P, S, S);
+  ctx.fillStyle = '#2a2f45';
+  ctx.font = '600 46px Caveat, "Comic Sans MS", cursive';
+  ctx.textAlign = 'center';
+  ctx.fillText(caption, W / 2, H - 38);
+  const tex = toTexture(c);
+  const img = new Image();
+  img.onload = () => {
+    const a = img.width / img.height;
+    const sw = a > 1 ? img.height : img.width, sh = sw;
+    const sx = (img.width - sw) / 2, sy = a > 1 ? 0 : (img.height - sh) * 0.3;
+    ctx.drawImage(img, sx, sy, sw, sh, P, P, S, S);
+    // A little warmth and fade, like an instant print.
+    ctx.fillStyle = 'rgba(255,220,170,0.08)';
+    ctx.fillRect(P, P, S, S);
+    tex.needsUpdate = true;
+  };
+  img.src = url;
+  return tex;
 }
 
 /* Duke pennant: blue felt triangle with white lettering. */
@@ -233,76 +197,6 @@ export function pennantTexture() {
   ctx.fillText('DUKE', 120, H / 2 - 18);
   ctx.font = '700 34px Georgia, serif';
   ctx.fillText('BLUE DEVILS', 132, H / 2 + 72);
-  return toTexture(c);
-}
-
-/* Poster: "dive deeper" with a whale shark silhouette. */
-export function posterTexture() {
-  const W = 600, H = 840;
-  const [c, ctx] = canvas(W, H);
-  const g = ctx.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, '#2fb6d8');
-  g.addColorStop(0.45, '#0d5f8c');
-  g.addColorStop(1, '#03203a');
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, W, H);
-  // Light rays.
-  ctx.globalAlpha = 0.12;
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 6; i++) {
-    ctx.beginPath();
-    ctx.moveTo(120 + i * 70, 0);
-    ctx.lineTo(160 + i * 70, 0);
-    ctx.lineTo(60 + i * 120, H * 0.75);
-    ctx.lineTo(20 + i * 110, H * 0.75);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-  // Whale shark.
-  ctx.save();
-  ctx.translate(300, 470);
-  ctx.fillStyle = '#062a45';
-  ctx.beginPath();
-  ctx.moveTo(-230, 10);
-  ctx.quadraticCurveTo(-120, -80, 60, -55);
-  ctx.quadraticCurveTo(170, -40, 215, -110);
-  ctx.lineTo(232, -100);
-  ctx.quadraticCurveTo(215, -25, 240, 50);
-  ctx.lineTo(222, 58);
-  ctx.quadraticCurveTo(190, 20, 70, 40);
-  ctx.quadraticCurveTo(-20, 70, -120, 60);
-  ctx.lineTo(-90, 110);
-  ctx.lineTo(-140, 62);
-  ctx.quadraticCurveTo(-210, 55, -230, 10);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(-10, -62);
-  ctx.lineTo(30, -120);
-  ctx.lineTo(45, -55);
-  ctx.fill();
-  const rand = rng(9);
-  ctx.fillStyle = 'rgba(200,235,255,0.55)';
-  for (let i = 0; i < 70; i++) {
-    const x = -200 + rand() * 380, y = -50 + rand() * 90;
-    ctx.beginPath();
-    ctx.arc(x, y + (x > 100 ? -20 : 0), 2 + rand() * 2.5, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.restore();
-  // Bubbles.
-  ctx.strokeStyle = 'rgba(255,255,255,0.6)';
-  ctx.lineWidth = 2;
-  for (let i = 0; i < 18; i++) {
-    ctx.beginPath();
-    ctx.arc(80 + rand() * 440, 120 + rand() * 280, 4 + rand() * 9, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  ctx.fillStyle = '#fff';
-  ctx.textAlign = 'center';
-  ctx.font = '400 92px "Permanent Marker", Impact, sans-serif';
-  ctx.fillText('DIVE', W / 2, 700);
-  ctx.font = '400 64px "Permanent Marker", Impact, sans-serif';
-  ctx.fillText('DEEPER', W / 2, 778);
   return toTexture(c);
 }
 
@@ -428,22 +322,6 @@ export function floppyTexture(label, color, seed) {
   ctx.font = '600 50px Caveat, cursive';
   ctx.fillText(label[1] || '', 4, 70);
   ctx.restore();
-  return toTexture(c);
-}
-
-/* Mug wrap: Duke-blue mug with a slogan. */
-export function mugTexture() {
-  const W = 1024, H = 256;
-  const [c, ctx] = canvas(W, H);
-  ctx.fillStyle = '#f4f2ec';
-  ctx.fillRect(0, 0, W, H);
-  ctx.fillStyle = '#012169';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.font = '900 54px Georgia, serif';
-  ctx.fillText("WORLD'S OKAYEST", W * 0.55, H * 0.4);
-  ctx.font = '400 74px "Permanent Marker", Impact, sans-serif';
-  ctx.fillText('DIVER', W * 0.55, H * 0.72);
   return toTexture(c);
 }
 

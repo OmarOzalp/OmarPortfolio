@@ -59,8 +59,43 @@ Each prop builder in `desk/scene.js` returns a group tagged with `prop(id, group
 load it into that group instead (keeping the id), call `restOn()` so it sits on the desk, and the
 picking, hover glow, camera framing and info card keep working unchanged.
 
+## Update — 2026-10-13: photos and a beach-house room
+
+- **Photos** live in `assets/photos/` (max 1600px, metadata stripped) with 640px copies in `thumbs/`. They are
+  listed once in `VFS.PHOTOS` (`os/fs.js`) and feed My Pictures + the Image Viewer, About Me, the plain page,
+  the polaroid string on the desk wall, and photos pinned to prop cards (`photo` / `gallery` in `desk/props.js`).
+  Clicking a photo on a card opens it in the Image Viewer on the PC.
+- **Room**: the night room became a golden-hour beach house — sea-glass walls over white beadboard, a real window
+  opening onto a painted beach scene set back for parallax, linen curtains, a sill plant, and string lights with
+  polaroids. A spotlight from outside, aimed through the opening, casts a window-shaped sunbeam (mullions included)
+  across the desk; a ceiling plane stops light leaking over the wall.
+- **Removed**: the dive poster and the mug.
+- **Track spikes** are now lofted surfaces (rounded cross-sections swept heel to toe with toe spring), with a knit
+  bump map, collar opening, criss-cross lace tubes and a bow, a white midsole and a spike plate with pins.
+- **Dive mask**: curved frame, lens retainer rings and glass, a silicone skirt lofted from the frame outline (flare
+  and face-seal lip, nose pocket), side buckles and a ribbed strap lying on the desk.
+
+## Update — the beach outside is real 3D
+
+- `desk/outdoor.js` builds its own scene: a sky shader with drifting fbm clouds and sun glow; an ocean shader
+  (tileable procedural normal map, sky reflection by Fresnel, sun glints, turquoise shallows, breakers rolling in,
+  lacy foam at an animated wash line); sand with ripples and dunes whose shader darkens and glosses it where the
+  wash reaches; 3D palms (tapered curved trunks, alpha-cut drooping fronds, coconuts) casting shadows; a lifeguard
+  tower with a waving flag, umbrella + towel, surfboard, gulls, a headland and a sailboat. Its sun matches the
+  room's sunbeam (`SUN_DIR` in `desk/scene.js`).
+- Rendering (`desk/main.js`): the room renders first; an invisible portal pane just behind the window sash writes
+  1 to the stencil buffer wherever the window is actually visible. After clearing depth, the beach renders with a
+  far-reaching camera, every outdoor material stencil-tested against 1 and the scissor clipped to the window's
+  on-screen box, so only window pixels are shaded and the room's lighting is untouched.
+- The outdoor frame is pitched down ~7° so the horizon sits mid-window (a second-floor beach-house sightline).
+
+## Update — wrestling headgear rebuilt
+
+The old ear cups were single-sided domes you could see straight through. The headgear is now closed ear-guard shells
+(dome, rubber rim, foam backing, recessed vents, snaps) held in a worn shape by flat stitched webbing that follows an
+ellipsoid "head": crown strap, rear strap with buckle, chin strap with a chin cup.
+
 ## Pending content from Omar
 
-Photos for My Pictures (`os/apps.js` → `PICTURES`, plus `assets/photos/me.jpg` for About Me), the resume
-PDF (`RESUME_PDF` in `os/apps.js` and `plain.html`), sketchbook scans, and real details for the prop
-captions (wrestling, track events/PRs, things built with the drill, games played).
+The resume PDF (`RESUME_PDF` in `os/apps.js` and `plain.html`), sketchbook scans, a higher-detail drill if wanted, and real details for some captions (track events/PRs, things built with the
+drill, games played).
