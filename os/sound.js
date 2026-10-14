@@ -205,7 +205,23 @@ OS.sound = (function() {
       sq(1318.5, t + 0.34, 0.45, 0.045); sq(1046.5, t + 0.34, 0.45, 0.03);
     },
     lose: function(t) { [659.25, 587.33, 523.25, 392].forEach(function(f, i) { sq(f, t + i * 0.13, 0.14, 0.04); }); },
-    win: function(t) { [784, 988, 1175, 1568].forEach(function(f, i) { sq(f, t + i * 0.07, 0.12, 0.04); }); }
+    win: function(t) { [784, 988, 1175, 1568].forEach(function(f, i) { sq(f, t + i * 0.07, 0.12, 0.04); }); },
+    // Cartridges: one swooping in, its label catching the light, seating with a heavy clunk, popping out.
+    cartfly: function(t) {
+      noise(t, 0.6, { freq: 450, freqTo: 2600, q: 0.7, gain: 0.09 });
+      tone(330, t, 0.5, { type: 'triangle', gain: 0.03, slideTo: 880 });
+    },
+    sparkle: function(t) { [1568, 2093, 2637, 3136].forEach(function(f, i) { sq(f, t + i * 0.05, 0.08, 0.025); }); },
+    clunk: function(t) {
+      noise(t, 0.1, { type: 'lowpass', freq: 800, gain: 0.7 });
+      tone(95, t, 0.18, { gain: 0.32, slideTo: 58 });
+      noise(t + 0.03, 0.025, { freq: 4000, q: 3, gain: 0.3 });
+    },
+    eject: function(t) {
+      noise(t, 0.03, { freq: 3200, q: 3, gain: 0.3 });
+      tone(260, t + 0.01, 0.1, { type: 'triangle', gain: 0.1, slideTo: 620 });
+      noise(t + 0.08, 0.3, { freq: 800, freqTo: 1800, q: 0.8, gain: 0.06 });
+    }
   };
 
   // A short, dry square-wave note for the handheld.
