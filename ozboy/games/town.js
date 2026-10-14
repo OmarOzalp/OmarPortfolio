@@ -1,7 +1,7 @@
 // town.js — BEACH WALK: a tiny top-down beach town that is a second way into the handheld.
 // Every building is a section of it, the end of the pier is the fishing spot, and the locals talk.
 
-import { C, makeCanvas, rect, frame, pxText, bitmap } from '../pixel.js';
+import { C, makeCanvas, rect, frame, pxText, bitmap, textWidth } from '../pixel.js';
 
 const T = 16, COLS = 22, ROWS = 26, MW = COLS * T, MH = ROWS * T;
 const STEP = 130;                       // ms to walk one tile
@@ -26,7 +26,8 @@ const X = {
 
 // '~' sea  '=' pier  'F' pier end (fishing)  'b' bait bucket / tackle box  ',' wet sand  '.' sand
 // 'P' palm  'U' umbrella  't' towel  'L' lifeguard tower  'c' sandcastle  'v' surfboard  'S' sign
-// '#' boardwalk  ':' pavement  'g' grass  'h' hedge  'l' lamp  'B' building  'T' track  'G' track gate
+// '#' boardwalk  ':' pavement  'g' grass  'h' hedge  'l' lamp  'n' bench  'o' planter  'B' building
+// 'T' track  'G' track gate
 const MAP = [
   '~~~~~~~~~~~~~~~~~~~~~~',
   '~~~~~~bFb~~~~~~~~~~~~~',
@@ -39,13 +40,13 @@ const MAP = [
   '.....Ut............v..',
   '......t.S............S',
   '######################',
-  'g::::::::l::l::::::::g',
+  'g:::n::::l::l::::n:::g',
   'hBBBBBBBBB::BBBBBBBBBh',
   'hBBBBBBBBB::BBBBBBBBBh',
   'hBBBBBBBBB::BBBBBBBBBh',
   'PBBBBBBBBB::BBBBBBBBBP',
   'g::::::::::::::::::::g',
-  'g::::::::l::l::::::::g',
+  'g::o:::::l::l::o:::::g',
   'hBBBBBBBBB::BBBBBBBBBh',
   'hBBBBBBBBB::BBBBBBBBBh',
   'hBBBBBBBBB::BBBBBBBBBh',
@@ -55,7 +56,7 @@ const MAP = [
   'hTTTTTTTTTTTTTTTTTTTTh',
   'hTTTTTTTTTTTTTTTTTTTTh'
 ];
-const SOLID = '~bPULcvShlBTG';
+const SOLID = '~bPULcvShlnoBTG';
 
 // Places with a door. Buildings are 4 tiles tall with the door on the bottom row (entered going up);
 // the track gate is entered going down; the pier end is a spot you step onto.
@@ -90,7 +91,7 @@ const SIGNS = {
 
 const TALK = {
   crab: ['CRAB', 'Pinch pinch. Omar built a whole app about my cousins.', C.coral],
-  gull: ['GULL', 'SQUAWK. No fries? Then go fish off the pier. I will wait.', C.grayDark],
+  gull: ['GULL', "SQUAWK. No fries? Then go fish off the pier. I'll wait.", C.grayDark],
   guard: ['LIFEGUARD', "No running on the pier. Unless it's track practice.", C.red]
 };
 
@@ -655,7 +656,7 @@ export default function create(host) {
       tower: spr(32, 56, drawTower),
       lamp: spr(16, 32, drawLamp),
       surf: spr(12, 28, drawSurf),
-      spire: spr(18, 46, drawSpire),
+      spire: spr(18, 33, drawSpire),
       dish: spr(16, 16, drawDish)
     };
   }
@@ -769,22 +770,21 @@ export default function create(host) {
 
   function drawSpire(g) {
     // Duke-ish stone tower with a pointed blue spire
-    rect(g, C.ink, 2, 14, 14, 32);
-    rect(g, X.stone, 3, 15, 12, 31);
-    rect(g, X.stoneLo, 12, 15, 3, 31);
-    for (let yy = 19; yy < 46; yy += 5) rect(g, X.stoneLo, 3, yy, 9, 1);
-    rect(g, C.ink, 7, 22, 4, 8);
-    rect(g, X.duke, 8, 23, 2, 7);
-    rect(g, C.ink, 7, 34, 4, 6);
-    rect(g, X.duke, 8, 35, 2, 5);
+    rect(g, C.ink, 2, 12, 14, 21);
+    rect(g, X.stone, 3, 13, 12, 20);
+    rect(g, X.stoneLo, 12, 13, 3, 20);
+    for (let yy = 17; yy < 33; yy += 5) rect(g, X.stoneLo, 3, yy, 9, 1);
+    rect(g, C.ink, 7, 16, 4, 9);
+    rect(g, C.ink, 8, 15, 2, 1);
+    rect(g, X.duke, 8, 16, 2, 8);
     // pinnacles
-    for (const px of [1, 14]) { rect(g, C.ink, px, 9, 3, 6); rect(g, X.stone, px + 1, 10, 1, 5); }
-    for (let j = 0; j < 12; j++) {
-      const hw = Math.round(j / 2);
+    for (const px of [1, 14]) { rect(g, C.ink, px, 8, 3, 5); rect(g, X.stone, px + 1, 9, 1, 4); }
+    for (let j = 0; j < 10; j++) {
+      const hw = Math.round(j * 0.6);
       rect(g, C.ink, 9 - hw - 1, 2 + j, hw * 2 + 2, 1);
       rect(g, '#0b2d7c', 9 - hw, 2 + j, hw * 2, 1);
     }
-    rect(g, '#2a50a8', 8, 6, 1, 7);
+    rect(g, '#2a50a8', 8, 6, 1, 6);
     rect(g, C.ink, 8, 0, 2, 3);
   }
 
@@ -864,8 +864,15 @@ export default function create(host) {
     for (const [x, y] of [[11, 6], [5, 8]]) ellipse(g, x * T - 2, y * T + 8, 24, 8);
     ellipse(g, 15 * T + 2, 7 * T + 10, 32, 8);
     ellipse(g, 19 * T + 2, 8 * T + 13, 12, 4);
-    // hedges
-    for (let ty = 11; ty < ROWS; ty++) for (let tx = 0; tx < COLS; tx++) if (MAP[ty][tx] === 'h') hedge(g, tx * T, ty * T);
+    // hedges, benches, planters
+    for (let ty = 11; ty < ROWS; ty++) {
+      for (let tx = 0; tx < COLS; tx++) {
+        const ch = MAP[ty][tx];
+        if (ch === 'h') hedge(g, tx * T, ty * T);
+        else if (ch === 'n') bench(g, tx * T, ty * T);
+        else if (ch === 'o') planter(g, tx * T, ty * T, tx);
+      }
+    }
     // buildings and their doormats
     PLACES.forEach((p) => {
       if (!p.w) return;
@@ -920,6 +927,29 @@ export default function create(host) {
     rect(g, '#7fd46a', x + 4, y + 5, 1, 1);
     rect(g, C.palmDark, x + 9, y + 9, 1, 1);
     rect(g, C.coral, x + 10, y + 5, 1, 1);
+  }
+
+  function bench(g, x, y) {
+    rect(g, X.shade, x + 1, y + 13, 15, 3);
+    rect(g, C.ink, x, y + 2, 16, 6);
+    rect(g, C.teal, x + 1, y + 3, 14, 1);
+    rect(g, '#178a9a', x + 1, y + 5, 14, 2);
+    rect(g, C.ink, x, y + 8, 16, 4);
+    rect(g, X.plankHi, x + 1, y + 9, 14, 1);
+    rect(g, X.plank, x + 1, y + 10, 14, 1);
+    rect(g, C.ink, x + 1, y + 12, 2, 3);
+    rect(g, C.ink, x + 13, y + 12, 2, 3);
+  }
+
+  function planter(g, x, y, n) {
+    rect(g, X.shade, x + 2, y + 13, 14, 3);
+    rect(g, C.ink, x + 1, y + 8, 14, 7);
+    rect(g, '#d9774a', x + 2, y + 9, 12, 5);
+    rect(g, '#b85a32', x + 2, y + 12, 12, 2);
+    disc(g, C.palmDark, x + 8, y + 7, 5);
+    disc(g, C.palm, x + 8, y + 6, 4);
+    const fc = n & 1 ? [C.yellow, C.pink] : [C.coral, C.white];
+    for (const [fx, fy, i] of [[5, 5, 0], [10, 4, 1], [8, 8, 0], [11, 7, 0], [6, 2, 1]]) rect(g, fc[i], x + fx, y + fy, 2, 2);
   }
 
   function signPost(g, x, y) {
@@ -1041,7 +1071,7 @@ export default function create(host) {
     add(S.tower, 15 * T, 8 * T - 56);
     for (const [x, y] of [[9, 11], [12, 11], [9, 17], [12, 17]]) add(S.lamp, x * T, (y + 1) * T - 32);
     add(S.surf, 19 * T + 2, 9 * T - 28);
-    add(S.spire, 16 * T + 40 - 9, 18 * T + 17 - 46);
+    add(S.spire, 16 * T + 40 - 9, 18 * T + 17 - 33);
     add(S.dish, 5 * T + 6, 18 * T - 8);
     return o;
   }
@@ -1123,7 +1153,7 @@ export default function create(host) {
     // flags
     drawFlag(15 * T + 30, 8 * T - 56, 8, 5, C.red, null);
     if (camY < 210) { rect(ctx, C.ink, 82 - camX, 178 - camY, 1, 20); rect(ctx, C.ink, 81 - camX, 197 - camY, 3, 1); drawFlag(83, 179, 10, 7, C.red, C.white); }
-    if (camY > 120 && camY < 300) drawFlag(16 * T + 40, 18 * T - 29, 7, 4, X.duke, null);
+    if (camY > 120 && camY < 300) drawFlag(16 * T + 41, 18 * T - 15, 7, 4, X.duke, null);
     // arcade marquee bulbs
     if (camY < 270 && camX + W > 272) {
       const bx = 17 * T + 4, by = 12 * T + 15, bw = 56, bh = 16, n = Math.floor(clock * 6);
@@ -1143,19 +1173,19 @@ export default function create(host) {
   function drawActors(ppx, ppy) {
     // the crab, gull and lifeguard are all north of or level with these rows; sort against the player
     const cx = Math.round((crab.mv ? crab.x + (crab.tx - crab.x) * crab.p : crab.x) * T), cy = crab.y * T;
-    const before = [cy <= ppy, gull.y * T <= ppy, guard.y * T <= ppy];
+    const crabFirst = cy <= ppy, gullFirst = gull.y * T <= ppy, guardFirst = guard.y * T <= ppy;
     for (let pass = 0; pass < 2; pass++) {
       const want = pass === 0;
-      if (before[0] === want) {
+      if (crabFirst === want) {
         rect(ctx, X.shade, cx + 3 - camX, cy + 14 - camY, 10, 2);
         blit(S.crab[(crab.mv ? (clock * 12 | 0) : (clock * 2 | 0)) & 1], cx - camX, cy + 4 - camY);
       }
-      if (before[1] === want) {
+      if (gullFirst === want) {
         const fl = gull.act === 2 ? ((clock * 10 | 0) & 1) : 0;
         rect(ctx, X.shade, gull.x * T + 4 - camX, gull.y * T + 14 - camY, 9, 2);
         blit(S.gull[gull.left ? 'left' : 'right'][fl], gull.x * T - camX, gull.y * T - camY + (gull.act === 1 ? 1 : 0));
       }
-      if (before[2] === want) {
+      if (guardFirst === want) {
         rect(ctx, X.shade, guard.x * T + 3 - camX, guard.y * T + 14 - camY, 10, 2);
         blit(S.guard, guard.x * T - camX, guard.y * T - camY);
       }
@@ -1239,7 +1269,7 @@ export default function create(host) {
     const cxr = Math.round(W + 20 - (clock * 11) % (W + 40));
     blit(S.crab[(clock * 10 | 0) & 1], cxr, foot - 11);
     // prompts
-    if ((clock * 2 | 0) % 2 === 0 || clock < 0.4) pxText(ctx, 'A: START', 6, H - 11, C.ink);
+    pxText(ctx, 'A: START', 6, H - 11, (clock * 2 | 0) % 2 ? C.coral : C.ink);
     pxText(ctx, 'B: EXIT', W - 6, H - 11, C.ink, 8, 'right');
   }
 
@@ -1249,26 +1279,24 @@ export default function create(host) {
     let cur = '';
     for (const w of words) {
       const t = cur ? cur + ' ' + w : w;
-      if (cur && textW(t) > maxW) { lines.push(cur); cur = w; } else cur = t;
+      if (cur && textWidth(t, 12, 'VT323') > maxW) { lines.push(cur); cur = w; } else cur = t;
     }
     if (cur) lines.push(cur);
     return lines;
   }
-  function textW(s) {
-    textW.c = textW.c || document.createElement('canvas').getContext('2d');
-    textW.c.font = '12px VT323';
-    return Math.ceil(textW.c.measureText(s).width);
-  }
 
   function say(name, text, color, choice) {
-    const lines = wrap(text, 138), pages = [];
+    // keep the last two words together so a line never ends up holding just 'in?'
+    const lines = wrap(text.replace(/ (\S+)$/, '\u00a0$1'), 138), pages = [];
     for (let i = 0; i < lines.length; i += 3) pages.push(lines.slice(i, i + 3));
-    dlg = { name, color: color || C.navy, pages, widths: pages.map((p) => p.map(textW)), page: 0, rev: 0, choice: choice || null, sel: 0 };
+    const widths = pages.map((p) => p.map((l) => textWidth(l, 12, 'VT323')));
+    const totals = widths.map((w) => w.reduce((a, b) => a + b, 0));
+    dlg = { name, color: color || C.navy, pages, widths, totals, page: 0, rev: 0, choice: choice || null, sel: 0 };
     mode = 'dialog';
     held.length = 0; path = null; queued = null;
     host.sfx('blip');
   }
-  const pageW = () => dlg.widths[dlg.page].reduce((a, b) => a + b, 0);
+  const pageW = () => dlg.totals[dlg.page];
   const lastPage = () => dlg.page === dlg.pages.length - 1;
 
   function dlgBox() {
@@ -1603,9 +1631,10 @@ export default function create(host) {
     }
     // walking
     if (DIR[b]) {
+      // a quick tap still counts: facing that way it takes a step, otherwise it turns in place
       held.push(b);
       path = null; queued = null;
-      if (!pl.mv && pl.f !== b) { pl.f = b; pl.turn = 80; }
+      if (!pl.mv && pl.f !== b) { pl.f = b; pl.turn = 90; } else queued = b;
     } else if (b === 'a') {
       path = null;
       if (pl.mv) pl.wantA = true; else interact();
