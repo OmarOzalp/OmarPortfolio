@@ -251,7 +251,7 @@ export default function create(host) {
     rect(g, '#fff6c2', sx - 3, sy - 4, 3, 1);
     rect(g, '#fff6c2', sx - 4, sy - 3, 2, 2);
     // a far-off island with one palm
-    const ix = 98, iy = waterY - 1;
+    const ix = 124, iy = waterY - 1;
     rect(g, '#7cc49a', ix + 4, iy - 2, 12, 1);
     rect(g, '#6bb88c', ix + 1, iy - 1, 19, 1);
     rect(g, '#e8dcae', ix, iy, 22, 1);
@@ -1046,15 +1046,16 @@ export default function create(host) {
     rect(ctx, C.navy, x + 1, y + 1, w - 2, 14);
     pxText(ctx, 'FISH LOG', x + 6, y + 4, C.yellow, 8, 'left');
     pxText(ctx, logTotal, x + w - 6, y + 2, C.white, 12, 'right', 'VT323');
-    const rowH = Math.min(28, Math.floor((h - 34) / logRows.length));
+    const room = h - 33, rowH = Math.min(28, Math.floor(room / logRows.length)), small = rowH < 24;
+    const top = y + 19 + Math.floor((room - rowH * logRows.length) / 2);
     for (let i = 0; i < logRows.length; i++) {
-      const r = logRows[i], ry = y + 19 + i * rowH;
+      const r = logRows[i], ry = top + i * rowH;
       if (i) rect(ctx, C.sandDark, x + 4, ry - 2, w - 8, 1);
       const s = spr(r.kd, r.got ? 0 : 4);
       draw(s, x + 4 + Math.round((28 - s.w) / 2), ry + Math.round((rowH - 3 - s.h) / 2), 1);
       pxText(ctx, r.name, x + 36, ry + 1, r.got ? C.ink : C.grayDark, 8, 'left');
       if (r.n) pxText(ctx, r.n, x + w - 6, ry + 1, C.coral, 8, 'right');
-      pxText(ctx, r.best, x + 36, ry + 9, r.got ? C.navy : C.gray, 12, 'left', 'VT323');
+      pxText(ctx, r.best, x + 36, ry + (small ? 8 : 9), r.got ? C.navy : C.gray, small ? 10 : 12, 'left', 'VT323');
     }
     pxText(ctx, 'B: CLOSE', W / 2, y + h - 12, C.grayDark, 12, 'center', 'VT323');
   }
@@ -1207,7 +1208,7 @@ export default function create(host) {
   const _debug = {
     state: () => ({ phase, power, progress, barPos, fishPos, bar: kd.bar, species: kd.id, inside, paused, logOpen }),
     force(id) { forced = id; },
-    bite() { if (phase === 'wait') biteAt = pt; },
+    bite() { if (phase === 'wait') pt = biteAt; },
     win() { if (phase === 'fight') progress = 2; },
     lose() { if (phase === 'fight') progress = -1; }
   };

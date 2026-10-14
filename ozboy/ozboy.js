@@ -639,7 +639,11 @@ function gameView(name) {
         sfx: (n) => sound.play(n),
         vibrate: (ms) => buzz(ms),
         exit: () => { if (alive) goBack(); },
-        open: (id) => { if (!alive) return; if (id === 'snake' || id === 'fish' || id === 'town') go('game', id); else go(id, null); },
+        open: (id) => {
+          if (!alive) return;
+          if (id === 'snake' || id === 'fish' || id === 'town') go('game', id);
+          else go(id, id === 'pics' && name === 'fish' ? 'yellowtail' : null);   // the catch card's "SEE IT"
+        },
         asset
       };
       canvas.addEventListener('pointerdown', (e) => {
@@ -672,7 +676,8 @@ function gameView(name) {
     pause() { if (game) game.pause(); },
     resume() { if (game) game.resume(); },
     raw: true,
-    onButton(b, isDown) { if (game) game.button(b, isDown); return true; }
+    onButton(b, isDown) { if (game) game.button(b, isDown); return true; },
+    live: () => game
   };
 }
 
@@ -850,5 +855,6 @@ window.__ozboy = {
   get depth() { return stack.length; },
   get held() { return held; },
   get booting() { return !!booting; },
-  get focus() { return cur && cur.items[cur.fi] ? cur.items[cur.fi].textContent.trim() : null; }
+  get focus() { return cur && cur.items[cur.fi] ? cur.items[cur.fi].textContent.trim() : null; },
+  get game() { return cur && cur.def.live ? cur.def.live() : null; }
 };
