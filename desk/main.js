@@ -294,7 +294,7 @@ async function start3D() {
 
   function unfocusProp() { focused = null; }
 
-  function liftFor(id) { return id === 'pennant' ? 0 : 0.03; }
+  function liftFor(id) { return PROPS[id].wall ? 0 : 0.03; }
 
   /* ---------- OS bridge ---------- */
   // Messages sent before the OS has finished loading are queued and delivered on 'ready'.
@@ -576,11 +576,11 @@ async function start3D() {
     }
     camera.lookAt(cam.target);
 
-    // Lift the focused prop off the desk with a slow bob.
+    // Lift the focused prop off the desk with a slow bob. Wall-hung props stay put.
     Object.entries(propGroups).forEach(([id, g]) => {
-      if (PROPS[id].kind === 'screen' || PROPS[id].kind === 'toggle') return;
+      if (PROPS[id].kind === 'screen' || PROPS[id].kind === 'toggle' || PROPS[id].wall) return;
       const goal = id === focused ? liftFor(id) + Math.sin(t * 1.6) * 0.004 : 0;
-      const yaw = id === focused && id !== 'pennant' ? Math.sin(t * 0.8) * 0.12 : 0;
+      const yaw = id === focused ? Math.sin(t * 0.8) * 0.12 : 0;
       const by = g.userData.basePos.y;
       const ny = THREE.MathUtils.damp(g.position.y, by + goal, 6, dt);
       const nr = THREE.MathUtils.damp(g.rotation.y, g.userData.baseRot.y + yaw, 4, dt);
