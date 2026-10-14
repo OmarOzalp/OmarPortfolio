@@ -7,7 +7,6 @@ const CELL = 8, HUD = 12;
 const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];          // up, right, down, left
 const DIRS = { up: 0, right: 1, down: 2, left: 3 };
 const INK = '#0a1430';
-const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const OUTLINE = [-1, 0, 1, 0, 0, -1, 0, 1];             // x,y pairs around big text
 
 // Band palettes: h body, s lit edge, d shaded edge (plus head features).
@@ -15,27 +14,32 @@ const TEAL = { h: C.teal, s: '#8cecf6', d: '#127f99', w: C.white, p: INK, y: C.y
 const GOLD = { h: C.yellow, s: '#fff4bd', d: '#d6961c' };
 const BONE = { h: '#c7d1e2', s: '#ffffff', d: '#8792aa', w: C.white, p: INK, y: '#eef2f8', x: INK };
 
-// Snake pieces are 8x8 grids facing right with the neck on the left: 'o' outline, '#' body (lit and
+// Snake pieces are grids facing right with the neck on the left: 'o' outline, '#' body (lit and
 // shaded from its silhouette), other letters are features. turn() makes the other directions.
+// The head is a pixel wider than its cell on each side, so it reads as a head.
 const HEAD = [
-  'oooooo  ',
-  '######o ',
-  '###ww#yo',
+  ' ooooo  ',
+  'o#####o ',
+  '###ww##o',
   '###wp#yo',
   '######yo',
-  '#####yyo',
-  '######o ',
-  'oooooo  '
+  '######yo',
+  '###wp#yo',
+  '###ww##o',
+  'o#####o ',
+  ' ooooo  '
 ];
 const HEAD_KO = [
-  'oooooo  ',
-  '##x#x#o ',
-  '###x##yo',
+  ' ooooo  ',
+  'o#x#x#o ',
+  '###x###o',
   '##x#x#yo',
   '######yo',
-  '#####yyo',
-  '######o ',
-  'oooooo  '
+  '######yo',
+  '##x#x#yo',
+  '###x###o',
+  'o#x#x#o ',
+  ' ooooo  '
 ];
 const TAIL = [
   'ooo     ',
@@ -59,23 +63,23 @@ const FISH = [
   '        '
 ];
 const SHRIMP = [
-  'a   kkk ',
-  ' akkplpk',
-  ' kpplplk',
-  'kepplplk',
+  'a       ',
+  ' akkkk  ',
+  ' kllllk ',
+  'kpedpdpk',
+  'kppdpdpk',
   ' kkkkppk',
-  '   kplk ',
-  '  kpppk ',
-  '  kkkk  '
+  '   kfffk',
+  '    kkk '
 ];
 const FISH_C = { k: INK, o: C.orange, w: C.white, e: INK, a: '#ffb36b' };
-const SHRIMP_C = { k: INK, p: '#ff7a9c', l: '#ffc8d6', e: INK, a: '#ffc8d6' };
+const SHRIMP_C = { k: INK, p: '#ff7a9c', l: '#ffc8d6', d: '#e0507a', f: C.pink, e: INK, a: '#ffc8d6' };
 
 // The title's demo snake swims a square wave: one period of moves is R,R,U,U,R,R,D,D.
 const TX = [0, 1, 2, 2, 2, 3, 4, 4], TY = [0, 0, 0, -1, -2, -2, -2, -1];
 const DEMO_LEN = 8;
-// Tongue pixels for a head facing right (relative to its cell), turned like the sprites.
-const TONGUE = [8, 4, 9, 4, 10, 3, 10, 5];
+// Tongue pixels for a head facing right (relative to its 8x10 sprite), turned like the sprites.
+const TONGUE = [8, 5, 9, 5, 10, 4, 10, 6];
 
 const QUIPS = {
   wall: ['THE REEF WINS.', 'BONK. CORAL.', 'WALL 1, ME 0.', 'BLUB.', 'SHOULDA TURNED.'],
@@ -91,15 +95,23 @@ function mix(a, b, t) {
   return out;
 }
 
-// A grid turned to face d (0 up, 1 right, 2 down, 3 left).
+// A right-facing grid turned to face d (0 up, 1 right, 2 down, 3 left).
 function turn(g, d) {
-  const out = [];
-  for (let y = 0; y < 8; y++) {
+  const h = g.length, w = g[0].length, out = [];
+  if (d === 1 || d === 3) {
+    for (let y = 0; y < h; y++) out.push(d === 1 ? g[y] : g[y].split('').reverse().join(''));
+    return out;
+  }
+  for (let r = 0; r < w; r++) {
     let row = '';
-    for (let x = 0; x < 8; x++) row += d === 1 ? g[y][x] : d === 3 ? g[y][7 - x] : d === 2 ? g[x][y] : g[x][7 - y];
+    for (let c = 0; c < h; c++) row += d === 2 ? g[c][r] : g[c][w - 1 - r];
     out.push(row);
   }
   return out;
+}
+// The same turn for a point (x, y) of a right-facing grid w wide.
+function turnPt(x, y, w, d) {
+  return d === 1 ? [x, y] : d === 3 ? [w - 1 - x, y] : d === 2 ? [y, x] : [y, w - 1 - x];
 }
 
 // A body cell joined to its neighbours on the sides in mask m (1 up, 2 right, 4 down, 8 left).
@@ -141,17 +153,18 @@ export default function create(host) {
   }
   // Renders a snake grid; '#' pixels on the top/left edge of the silhouette are lit, bottom/right shaded.
   function piece(g, links, pal) {
+    const w = g[0].length, h = g.length;
     const solid = (x, y) => {
       if (x < 0) return !!(links & 8);
-      if (x > 7) return !!(links & 2);
+      if (x >= w) return !!(links & 2);
       if (y < 0) return !!(links & 1);
-      if (y > 7) return !!(links & 4);
+      if (y >= h) return !!(links & 4);
       const ch = g[y][x];
       return ch !== ' ' && ch !== 'o';
     };
-    return sprite(8, 8, (c) => {
-      for (let y = 0; y < 8; y++) {
-        for (let x = 0; x < 8; x++) {
+    return sprite(w, h, (c) => {
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
           const ch = g[y][x];
           if (ch === ' ') continue;
           let col;
@@ -173,10 +186,7 @@ export default function create(host) {
   const KOS = [TEAL, BONE].map((p) => [0, 1, 2, 3].map((d) => piece(turn(HEAD_KO, d), back(d), p)));
   const TONGUES = [0, 1, 2, 3].map((d) => {
     const a = [];
-    for (let i = 0; i < 8; i += 2) {
-      const x = TONGUE[i], y = TONGUE[i + 1];
-      if (d === 1) a.push(x, y); else if (d === 3) a.push(7 - x, y); else if (d === 2) a.push(y, x); else a.push(y, 7 - x);
-    }
+    for (let i = 0; i < 8; i += 2) a.push(...turnPt(TONGUE[i], TONGUE[i + 1], 8, d));
     return a;
   });
   const FISHES = [FISH, mirror(FISH)].map((r) => sprite(8, 8, (c) => bitmap(c, r, 0, 0, 1, FISH_C)));
@@ -189,20 +199,19 @@ export default function create(host) {
   const GRASS_H = [5, 7, 4, 6, 4, 4, 7, 5, 6, 4, 5];
 
   const bg = sprite(W, H, (g) => {
-    const water = [C.deep, mix(C.deep, C.abyss, 0.35), mix(C.deep, C.abyss, 0.7), C.abyss];
-    const span = FB - HUD;
-    for (let y = 0; y < H; y++) {
-      const f = Math.max(0, Math.min(2.999, (y - HUD) / span * 3)), i = Math.floor(f);
-      const frac = Math.max(0, (f - i - 0.78) / 0.22);   // dither only near the band's lower edge
-      rect(g, water[i], 0, y, W, 1);
-      if (frac > 0) for (let x = 0; x < W; x++) if (BAYER[(y & 3) * 4 + (x & 3)] / 16 < frac) rect(g, water[i + 1], x, y, 1, 1);
-    }
-    // sun rays fading down from the surface
-    const ray = mix(C.deep, C.sea, 0.18), rayLen = Math.round(H * 0.5);
-    for (const [x0, wd] of [[18, 7], [70, 11], [124, 6]]) {
+    // water: a little lighter near the surface, darkest just above the sand
+    const surface = mix(C.deep, C.sea, 0.12);
+    const water = (y) => {
+      const f = Math.max(0, Math.min(1, y / FB));
+      return f < 0.4 ? mix(surface, C.deep, f / 0.4) : mix(C.deep, C.abyss, (f - 0.4) / 0.6);
+    };
+    for (let y = 0; y < H; y++) rect(g, water(y), 0, y, W, 1);
+    // sun rays slanting down from the surface and fading out
+    const rayLen = Math.round(FB * 0.62);
+    for (const [x0, wd] of [[14, 8], [66, 12], [122, 7]]) {
       for (let y = 0; y < rayLen; y++) {
-        const a = 0.5 * (1 - y / rayLen), xs = Math.round(x0 + y * 0.35);
-        for (let x = xs; x < xs + wd; x++) if (BAYER[(y & 3) * 4 + (x & 3)] / 16 < a) rect(g, ray, x, y, 1, 1);
+        const a = 0.13 * (1 - y / rayLen);
+        rect(g, mix(water(y), C.foam, a), Math.round(x0 + y * 0.32), y, wd, 1);
       }
     }
     // sand
@@ -274,11 +283,11 @@ export default function create(host) {
     }
   }
   const NU = 4;
-  const ux = new Float32Array(NU), uy = new Float32Array(NU), ul = new Float32Array(NU), us = ['', '', '', ''];
-  function popup(cx, cy, s) {
+  const ux = new Float32Array(NU), uy = new Float32Array(NU), ul = new Float32Array(NU), us = ['', '', '', ''], uc = us.slice();
+  function popup(cx, cy, s, color) {
     let j = 0;
     for (let i = 1; i < NU; i++) if (ul[i] < ul[j]) j = i;
-    ux[j] = cx; uy[j] = cy; ul[j] = 700; us[j] = s;
+    ux[j] = cx; uy[j] = cy; ul[j] = 700; us[j] = s; uc[j] = color;
   }
 
   /* ---------------- rules ---------------- */
@@ -351,22 +360,23 @@ export default function create(host) {
     const cx = FX + hx * CELL + 4, cy = FY + hy * CELL + 4;
     if (hx === foodX && hy === foodY) {
       score += 1; grow += 1;
-      eaten(cx, cy, '+1', 5);
+      eaten(cx, cy, '+1', C.yellow, 5);
       if (!shrimpOn && --shrimpIn <= 0) { placeShrimp(); shrimpIn = 5 + Math.floor(Math.random() * 4); }
       if (!placeFood()) return die('full');
     } else if (shrimpOn && hx === shX && hy === shY) {
       shrimpOn = false;
       score += 5; grow += 1;
-      eaten(cx, cy, '+5', 9);
+      eaten(cx, cy, '+5', '#ffc8d6', 9);
     }
   }
 
-  function eaten(cx, cy, s, n) {
+  function eaten(cx, cy, s, color, n) {
     scoreStr = String(score);
+    if (score > best) bestHud = 'BEST ' + score;
     host.sfx('eat');
     host.vibrate(10);
     burst(cx, cy, n);
-    popup(cx, cy - 6, s);
+    popup(cx, cy - 6, s, color);
     speed();
   }
 
@@ -376,7 +386,7 @@ export default function create(host) {
     state = 'dying';
     stateT = 950;
     if (kind === 'full') host.sfx('win');
-    else { host.sfx('die'); host.vibrate(30); }
+    else { host.sfx('die'); host.vibrate(10); }
     burst(FX + SX[hp] * CELL + 4, FY + SY[hp] * CELL + 2, 6);
   }
 
@@ -485,23 +495,21 @@ export default function create(host) {
   function drawSnake(ox, oy, n, ko, bleach, tongue) {
     for (let i = n - 1; i >= 0; i--) {
       const x = ox + LX[i] * CELL, y = oy + LY[i] * CELL;
-      let spr;
       if (i === 0) {
-        const d = dirOf(LX[0] - LX[1], LY[0] - LY[1]);
-        spr = (ko ? KOS : HEADS)[bleach ? 1 : 0][d];
+        // the head sprite is 8x10 (or 10x8), centred across its cell
+        const d = dirOf(LX[0] - LX[1], LY[0] - LY[1]), side = d & 1;
+        const hx = side ? x : x - 1, hy = side ? y - 1 : y;
         if (tongue && !ko) {
           const tg = TONGUES[d];
-          for (let j = 0; j < 8; j += 2) rect(ctx, C.red, x + tg[j], y + tg[j + 1], 1, 1);
+          for (let j = 0; j < 8; j += 2) rect(ctx, C.red, hx + tg[j], hy + tg[j + 1], 1, 1);
         }
+        ctx.drawImage((ko ? KOS : HEADS)[bleach ? 1 : 0][d], hx, hy, side ? 8 : 10, side ? 10 : 8);
+      } else if (i === n - 1) {
+        ctx.drawImage(TAILS[bleach ? 2 : i & 1][dirOf(LX[i] - LX[i - 1], LY[i] - LY[i - 1])], x, y, CELL, CELL);
       } else {
-        const band = bleach ? 2 : i & 1;
-        if (i === n - 1) spr = TAILS[band][dirOf(LX[i] - LX[i - 1], LY[i] - LY[i - 1])];
-        else {
-          const m = (1 << dirOf(LX[i - 1] - LX[i], LY[i - 1] - LY[i])) | (1 << dirOf(LX[i + 1] - LX[i], LY[i + 1] - LY[i]));
-          spr = BODY[band][m];
-        }
+        const m = (1 << dirOf(LX[i - 1] - LX[i], LY[i - 1] - LY[i])) | (1 << dirOf(LX[i + 1] - LX[i], LY[i + 1] - LY[i]));
+        ctx.drawImage(BODY[bleach ? 2 : i & 1][m], x, y, CELL, CELL);
       }
-      ctx.drawImage(spr, x, y, CELL, CELL);
     }
   }
 
@@ -533,18 +541,18 @@ export default function create(host) {
     if (shrimpOn && (shLife > 1600 || Math.floor(shLife / 110) % 2)) {
       ctx.drawImage(SHRIMPS[shFace], FX + shX * CELL, FY + shY * CELL - bob, CELL, CELL);
     }
-    // snake
-    for (let i = 0; i < len; i++) { const c = cellAt(i); LX[i] = SX[c]; LY[i] = SY[c]; }
-    const dead = state === 'dying' || state === 'over';
-    drawSnake(FX, FY, len, dead, state === 'dying' && Math.floor(stateT / 90) % 2 === 0, !dead && (wt % 2600) < 200);
-    // bubbles and popups
+    // burst bubbles rise out from under the snake
     for (let i = 0; i < NP; i++) {
       if (pl[i] <= 0) continue;
       const x = Math.round(px[i]), y = Math.round(py[i]);
       if (pl[i] > 300) { rect(ctx, C.foam, x, y, 2, 2); rect(ctx, '#8fd0f5', x + 1, y + 1, 1, 1); }
       else rect(ctx, '#8fd0f5', x, y, 1, 1);
     }
-    for (let i = 0; i < NU; i++) if (ul[i] > 0) txt(us[i], Math.round(ux[i]), Math.round(uy[i]) - 8, C.yellow);
+    // snake
+    for (let i = 0; i < len; i++) { const c = cellAt(i); LX[i] = SX[c]; LY[i] = SY[c]; }
+    const dead = state === 'dying' || state === 'over';
+    drawSnake(FX, FY, len, dead, state === 'dying' && Math.floor(stateT / 90) % 2 === 0, !dead && (wt % 2600) < 200);
+    for (let i = 0; i < NU; i++) if (ul[i] > 0) txt(us[i], Math.round(ux[i]), Math.round(uy[i]) - 8, uc[i]);
     // HUD
     rect(ctx, C.navy, 0, 0, W, HUD);
     rect(ctx, '#00134a', 0, HUD - 1, W, 1);
@@ -572,7 +580,7 @@ export default function create(host) {
       txt(overScore, W - 28, y + 44, C.white, 'right');
       txt('BEST', 28, y + 56, C.yellow, 'left');
       txt(overBest, W - 28, y + 56, C.yellow, 'right');
-      if (newBest && (t % 600) < 400) txt('NEW BEST!', W / 2, y + 68, C.lime);
+      if (newBest) txt('NEW BEST!', W / 2, y + 68, (t % 500) < 250 ? C.lime : C.yellow);
       txt('A: AGAIN  B: EXIT', W / 2, y + 82, C.white);
     }
   }
@@ -616,7 +624,7 @@ export default function create(host) {
       run();
     },
     button(name, down) {
-      if (!down || stopped) return;
+      if (!down || stopped || frozen) return;
       const d = DIRS[name];
       if (state === 'title') {
         if (name === 'a' || name === 'start') begin();
@@ -633,7 +641,7 @@ export default function create(host) {
       }
     },
     tap(x, y) {
-      if (stopped) return;
+      if (stopped || frozen) return;
       if (state === 'title' || (state === 'over' && stateT > 450)) { begin(); return; }
       if (state === 'paused') { ready(600); host.sfx('blip'); return; }
       if (state !== 'playing' && state !== 'ready') return;
@@ -643,7 +651,7 @@ export default function create(host) {
       else if (x < hx - 4) steer(3); else if (x > hx + 4) steer(1);
     },
     swipe(d) {
-      if (!stopped && DIRS[d] !== undefined) steer(DIRS[d]);
+      if (!stopped && !frozen && DIRS[d] !== undefined) steer(DIRS[d]);
     }
   };
 }
