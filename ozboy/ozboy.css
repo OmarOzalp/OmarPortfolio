@@ -319,6 +319,39 @@ body.rest .ctl { pointer-events: none; }
 .grill { position: absolute; left: 222px; top: 124px; display: flex; gap: 7px; transform: rotate(-30deg); }
 .grill i { width: 5px; height: 44px; border-radius: 3px; background: rgba(0, 0, 0, .28); box-shadow: inset 0 2px 3px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 255, 255, .25); }
 
+/* the cartridge in the slot on top: it sits behind the shell, so only the top sticks out */
+.slotcart {
+  position: absolute; left: 85px; top: -44px; width: 130px; height: 120px;
+  border-radius: 7px 7px 3px 3px;
+  background: linear-gradient(90deg, #8a8e97, #bcc0c9 12%, #aeb2bb 88%, #868a93);
+  box-shadow: inset 0 2px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .12);
+  transform: translateY(-440px); visibility: hidden;
+}
+.slotcart.in { visibility: visible; animation: cartin .62s cubic-bezier(.45, 0, .75, 1) forwards; }
+.slotcart.out { visibility: visible; animation: cartout .5s cubic-bezier(.3, 0, .8, .6) forwards; }
+.slotcart.seated { visibility: visible; transform: none; }
+@keyframes cartin {
+  0% { transform: translateY(-440px); }
+  72% { transform: translateY(5px); }
+  86% { transform: translateY(-2px); }
+  100% { transform: translateY(0); }
+}
+@keyframes cartout {
+  0% { transform: translateY(0); }
+  22% { transform: translateY(-16px); }
+  34% { transform: translateY(-11px); }
+  100% { transform: translateY(-440px); }
+}
+.slotcart .grip { position: absolute; left: 8px; right: 8px; top: 5px; height: 9px; border-radius: 2px;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 2px, rgba(255, 255, 255, .3) 2px 3px, transparent 3px 6px); }
+.slotcart .label { position: absolute; left: 10px; right: 10px; top: 17px; height: 92px; border-radius: 3px; overflow: hidden;
+  background: #fff; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 1px 0 rgba(0, 0, 0, .25); }
+.slotcart .label b { display: block; height: 15px; padding-top: 4px; text-align: center; font: 7px 'PS2P', monospace; font-weight: 400; color: #fff; background: var(--cart-c, var(--navy)); }
+.slotcart .label span { display: block; height: 77px; background-size: 100% 100%; image-rendering: pixelated; }
+#boy.seat { animation: seat .16s ease-out; }
+@keyframes seat { 40% { transform: translateY(2px); } }
+body.land .slotcart { left: 235px; }
+
 /* landscape: a wide handheld, screen in the middle, controls under the thumbs */
 body.land #boy { width: 600px; height: 300px; border-radius: 34px 34px 70px 70px / 34px 34px 90px 90px; }
 body.land .slab i { border-radius: calc(34px * var(--z)) calc(34px * var(--z)) calc(70px * var(--z)) calc(70px * var(--z)) / calc(34px * var(--z)) calc(34px * var(--z)) calc(90px * var(--z)) calc(90px * var(--z)); }
@@ -456,6 +489,32 @@ body.rest #lcd { pointer-events: none; }
 #lcd .boot .by { position: absolute; left: 0; right: 0; bottom: 14px; text-align: center; font: 10px/10px 'VT323', monospace; color: #69708a; opacity: 0; animation: fadein .3s 1.35s forwards; }
 @keyframes drop { to { top: calc(50% - 14px); } }
 @keyframes fadein { to { opacity: 1; } }
+
+/* the cartridge picker (GAMES) */
+#lcd .picker { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; }
+#lcd .picker .rowc { display: flex; align-items: center; gap: 6px; }
+#lcd .picker .arw { color: var(--navy); padding: 6px 2px; }
+#lcd .ccart {
+  position: relative; flex: none; border-radius: 5px 5px 2px 2px;
+  background: linear-gradient(90deg, #8a8e97, #bcc0c9 12%, #aeb2bb 88%, #868a93);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 0 #6c7079;
+}
+#lcd .ccart.sel { box-shadow: 0 0 0 1px var(--coral), inset 0 1px 0 rgba(255, 255, 255, .6), 0 2px 0 #6c7079; }
+#lcd .ccart .grip { position: absolute; left: 6px; right: 6px; top: 3px; height: 6px;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 1px, transparent 1px 3px); }
+#lcd .ccart .label { position: absolute; left: 7px; right: 7px; top: 12px; bottom: 7px; overflow: hidden; background: #fff; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7); }
+#lcd .ccart .label b { display: block; height: 12px; padding-top: 2px; text-align: center; font-weight: 400; color: #fff; }
+#lcd .ccart .label b.slim { font: 12px/9px 'VT323', monospace; padding-top: 1px; }
+#lcd .ccart .label span { position: absolute; left: 0; right: 0; top: 12px; bottom: 0; background-size: 100% 100%; image-rendering: pixelated; }
+#lcd .ccart.from-r { animation: fromr .16s ease-out; }
+#lcd .ccart.from-l { animation: froml .16s ease-out; }
+@keyframes fromr { from { transform: translateX(24px); opacity: 0; } }
+@keyframes froml { from { transform: translateX(-24px); opacity: 0; } }
+#lcd .picker .cname { margin: 2px 0 0; color: var(--navy); font: 8px/1 'PS2P', monospace; }
+#lcd .picker .csub { margin: 0; text-align: center; }
+#lcd .picker .dots { display: flex; gap: 3px; }
+#lcd .picker .dots i { width: 4px; height: 4px; background: #d8cfbc; }
+#lcd .picker .dots i.on { background: var(--coral); }
 
 /* options menu and toasts */
 #lcd .menu {

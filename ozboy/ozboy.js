@@ -2,7 +2,7 @@
 // handles picking it up and putting it down, its buttons (touch, keyboard, the phone's Back gesture)
 // and every screen: a home menu, the portfolio sections, a photo album and the games.
 
-import { iconURL, makeCanvas, drawIcon } from './pixel.js';
+import { iconURL, makeCanvas, drawIcon, rect } from './pixel.js';
 import { PROPS } from '../desk/props.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -205,11 +205,68 @@ const LIFE = {
     extra: [['MORE PICS', 'data-go="pics" data-arg="workshop"', true]] }
 };
 
+// Each game is a cartridge: a name, a label color and label art (cartArt below).
 const GAMES = [
-  { id: 'town', name: 'BEACH WALK', sub: 'Explore my life on foot', icon: 'about' },
-  { id: 'fish', name: 'FISH ON!', sub: 'Land a yellowtail like I did', icon: 'fish' },
-  { id: 'snake', name: 'SEA SNAKE', sub: 'Snake, but underwater', icon: 'snake' }
+  { id: 'town', name: 'BEACH WALK', sub: 'Explore my life on foot', color: '#ff6f59' },
+  { id: 'fish', name: 'FISH ON!', sub: 'Land a yellowtail like I did', color: '#1a6fc0' },
+  { id: 'snake', name: 'SEA SNAKE', sub: 'Snake, but underwater', color: '#0e8a9a' }
 ];
+let pickIdx = 0;
+
+// Cartridge label art, 55 x 39 pixels, shown at 2x on the cartridges.
+const CART_ART = {
+  town(ctx) {
+    rect(ctx, '#2aa9e0', 0, 0, 55, 8);
+    for (let x = 0; x < 55; x += 6) rect(ctx, '#7fd6f7', x, 3 + (x / 6) % 2 * 2, 3, 1);
+    rect(ctx, '#ffffff', 0, 8, 55, 1);
+    for (let x = 1; x < 55; x += 4) rect(ctx, '#ffffff', x, 9, 2, 1);
+    rect(ctx, '#f5dca6', 0, 10, 55, 29);
+    for (let i = 0; i < 26; i++) rect(ctx, '#e3c27e', (i * 23) % 55, 12 + (i * 11) % 26, 1, 1);
+    rect(ctx, '#ead09a', 24, 16, 7, 23);
+    rect(ctx, '#8a5a32', 8, 15, 2, 13);
+    [[3, 12, 12, 2], [5, 10, 8, 2], [4, 14, 4, 1], [11, 14, 4, 1], [7, 9, 4, 1]].forEach(([x, y, w, h]) => rect(ctx, '#2f9e44', x, y, w, h));
+    rect(ctx, '#fff3dc', 35, 21, 16, 12);
+    rect(ctx, '#ff6f59', 33, 17, 20, 4);
+    rect(ctx, '#5a3a22', 41, 27, 4, 6);
+    rect(ctx, '#7fd6f7', 37, 23, 3, 2); rect(ctx, '#7fd6f7', 47, 23, 3, 2);
+    rect(ctx, '#ffd23f', 12, 29, 9, 2); rect(ctx, '#8a5a32', 16, 31, 1, 5);
+    rect(ctx, '#2b1a12', 26, 22, 3, 1); rect(ctx, '#c98a5a', 26, 23, 3, 2); rect(ctx, '#012169', 25, 25, 5, 3);
+    rect(ctx, '#ff6f59', 26, 28, 3, 1); rect(ctx, '#c98a5a', 26, 29, 1, 1); rect(ctx, '#c98a5a', 28, 29, 1, 1);
+  },
+  fish(ctx) {
+    rect(ctx, '#8fd8ff', 0, 0, 55, 21);
+    rect(ctx, '#ffd23f', 45, 3, 6, 6); rect(ctx, '#8fd8ff', 45, 3, 1, 1); rect(ctx, '#8fd8ff', 50, 3, 1, 1); rect(ctx, '#8fd8ff', 45, 8, 1, 1); rect(ctx, '#8fd8ff', 50, 8, 1, 1);
+    rect(ctx, '#ffffff', 8, 5, 9, 2); rect(ctx, '#ffffff', 10, 4, 4, 1);
+    rect(ctx, '#2aa9e0', 0, 21, 55, 7); rect(ctx, '#1a8fd0', 0, 28, 55, 6); rect(ctx, '#0b4f8f', 0, 34, 55, 5);
+    for (let x = 2; x < 55; x += 7) rect(ctx, '#e8f8ff', x, 21, 3, 1);
+    rect(ctx, '#ffffff', 1, 18, 12, 3); rect(ctx, '#d2304a', 1, 20, 12, 1);
+    rect(ctx, '#2b1a12', 6, 13, 2, 1); rect(ctx, '#c98a5a', 6, 14, 2, 2); rect(ctx, '#012169', 5, 16, 4, 2);
+    for (let i = 0; i < 9; i++) rect(ctx, '#5b6478', 9 + i * 2, 13 - Math.floor(i / 2), 1, 1);
+    rect(ctx, '#cfe0f0', 24, 9, 13, 4); rect(ctx, '#6f8fb0', 25, 8, 11, 1); rect(ctx, '#ffd23f', 24, 11, 13, 1);
+    rect(ctx, '#cfe0f0', 37, 10, 2, 2); rect(ctx, '#14213d', 36, 10, 1, 1);
+    rect(ctx, '#ffd23f', 20, 7, 3, 2); rect(ctx, '#ffd23f', 20, 13, 3, 2); rect(ctx, '#ffd23f', 22, 9, 2, 4);
+    [[18, 18], [20, 16], [23, 19], [39, 17], [41, 15], [43, 18]].forEach(([x, y]) => rect(ctx, '#ffffff', x, y, 1, 1));
+  },
+  snake(ctx) {
+    rect(ctx, '#1a8fd0', 0, 0, 55, 13); rect(ctx, '#0b4f8f', 0, 13, 55, 13); rect(ctx, '#063258', 0, 26, 55, 13);
+    for (let x = 6; x < 55; x += 14) rect(ctx, 'rgba(255,255,255,.12)', x, 0, 4, 26);
+    rect(ctx, '#f5dca6', 0, 35, 55, 4);
+    [[4, 30], [6, 28], [44, 29], [46, 31], [49, 30], [20, 31]].forEach(([x, y]) => rect(ctx, '#2f9e44', x, y, 1, 35 - y));
+    [[10, 6], [12, 3], [40, 9], [42, 5], [30, 2], [33, 6]].forEach(([x, y]) => rect(ctx, '#bfe8ff', x, y, 1, 1));
+    const body = [[7, 22], [10, 22], [13, 22], [16, 21], [19, 19], [22, 17], [25, 16], [28, 16], [31, 17], [34, 19], [37, 21], [40, 22]];
+    body.forEach(([x, y]) => rect(ctx, '#0b2a3a', x - 1, y - 1, 5, 5));
+    body.forEach(([x, y], i) => rect(ctx, i % 2 ? '#ffd23f' : '#1fb5c9', x, y, 3, 3));
+    rect(ctx, '#0b2a3a', 42, 19, 7, 7); rect(ctx, '#1fb5c9', 43, 20, 5, 5); rect(ctx, '#ffffff', 46, 21, 1, 1); rect(ctx, '#d2304a', 49, 23, 2, 1);
+    rect(ctx, '#ff8a2a', 50, 13, 4, 3); rect(ctx, '#ffffff', 51, 13, 1, 3); rect(ctx, '#ff8a2a', 49, 14, 1, 1);
+  }
+};
+const cartArtUrls = {};
+function cartArt(id) {
+  if (cartArtUrls[id]) return cartArtUrls[id];
+  const { canvas, ctx } = makeCanvas(55, 39, 1);
+  CART_ART[id](ctx);
+  return (cartArtUrls[id] = canvas.toDataURL());
+}
 
 function photoBlock(id, style) {
   const ph = VFS.photo(id);
@@ -323,11 +380,45 @@ const VIEWS = {
     };
   },
 
-  games: () => ({
-    title: 'GAMES',
-    html: `<div class="cart pics" style="background:linear-gradient(#a98cff,#6b45d8)"><span class="k">Pick a cartridge</span><span class="big">GAMES</span></div>` +
-      GAMES.map((g) => `<div class="row" data-f data-go="game" data-arg="${g.id}">${img(g.icon)}<span class="tx">${g.name}<small>${esc(g.sub)}</small></span><span class="go">&gt;</span></div>`).join('')
-  }),
+  // A cartridge picker: one big cartridge at a time; A (or a tap) slots it into the handheld.
+  games: () => {
+    const h = Math.max(64, Math.min(100, fitted.lcdh - 63)), w = Math.round(h * 0.96);
+    const small = w - 14 < 82;   // too narrow for the longest name in the pixel font: use the slimmer one
+    const paint = (dir) => {
+      const g = GAMES[pickIdx], el = $('.ccart', viewEl);
+      $('.label b', el).textContent = g.name;
+      $('.label b', el).style.background = g.color;
+      $('.label b', el).classList.toggle('slim', small);
+      $('.label span', el).style.backgroundImage = `url(${cartArt(g.id)})`;
+      $('.cname', viewEl).textContent = g.name;
+      $('.csub', viewEl).textContent = g.sub;
+      viewEl.querySelectorAll('.dots i').forEach((d, i) => d.classList.toggle('on', i === pickIdx));
+      if (dir) {
+        el.classList.remove('from-l', 'from-r');
+        void el.offsetWidth;
+        el.classList.add(dir > 0 ? 'from-r' : 'from-l');
+        sound.play('blip');
+      }
+    };
+    const step = (d) => { pickIdx = (pickIdx + d + GAMES.length) % GAMES.length; paint(d); };
+    return {
+      title: 'GAMES',
+      hints: [['&lt;&gt;', 'PICK'], ['A', 'PLAY']],
+      fixed: true,
+      html: `<div class="picker"><div class="rowc"><span class="arw" data-act="prev">&lt;</span>` +
+        `<div class="ccart" data-f data-act="insert" style="width:${w}px;height:${h}px"><i class="grip"></i><div class="label"><b></b><span></span></div></div>` +
+        `<span class="arw" data-act="next">&gt;</span></div><p class="cname"></p><p class="csub"></p><div class="dots">${GAMES.map(() => '<i></i>').join('')}</div></div>`,
+      enter: () => paint(0),
+      acts: { prev: () => step(-1), next: () => step(1), insert: () => go('game', GAMES[pickIdx].id) },
+      onButton: (b, down) => {
+        if (!down) return false;
+        if (b === 'left') { step(-1); return true; }
+        if (b === 'right') { step(1); return true; }
+        return b === 'up' || b === 'down';
+      },
+      onSwipe: (dir) => step(dir === 'left' ? 1 : -1)
+    };
+  },
 
   game: (name) => gameView(name)
 };
@@ -350,7 +441,59 @@ function trackArt() {
 const stack = [];      // [{ id, arg, focus, scroll }]
 let cur = null;        // the live view: { def, items, fi, ... }
 
+// Games run off cartridges: going to or from a game swaps the cartridge in the slot first.
+let cartIn = null, swapping = null;
+const slotcart = $('.slotcart', boy);
+
 function render(restore) {
+  const entry = stack[stack.length - 1];
+  const want = entry.id === 'game' ? entry.arg : null;
+  if (want !== cartIn) swapCart(want, restore);
+  else draw(restore);
+}
+
+function setPower(isOn) {
+  boy.classList.toggle('on', isOn);
+  screenEl.classList.toggle('off', !isOn);
+}
+
+// Power off, eject whatever is in, slide the new cartridge down into the slot (clunk), power on.
+function swapCart(want, restore) {
+  leaveView();
+  const token = swapping = {};
+  const quick = reduceMotion;
+  const later = (fn, ms) => setTimeout(() => { if (swapping === token) fn(); }, quick ? 0 : ms);
+  setPower(false);
+  sound.play('toggle');
+  let t = 200;
+  if (cartIn) {
+    later(() => { slotcart.className = 'slotcart out'; sound.play('eject'); }, t);
+    t += 520;
+  }
+  cartIn = want;
+  if (want) {
+    const g = GAMES.find((x) => x.id === want) || GAMES[0];
+    pickIdx = GAMES.indexOf(g);
+    later(() => {
+      $('.label b', slotcart).textContent = g.name;
+      slotcart.style.setProperty('--cart-c', g.color);
+      $('.label span', slotcart).style.backgroundImage = `url(${cartArt(g.id)})`;
+      slotcart.className = 'slotcart in';
+      sound.play('cartin');
+    }, t);
+    later(() => { boy.classList.remove('seat'); void boy.offsetWidth; boy.classList.add('seat'); buzz(14); }, t + 440);
+    t += 760;
+  }
+  later(() => {
+    swapping = null;
+    slotcart.className = cartIn ? 'slotcart seated' : 'slotcart';
+    setPower(true);
+    sound.play('toggle');
+    draw(restore);
+  }, t + 100);
+}
+
+function draw(restore) {
   leaveView();
   const entry = stack[stack.length - 1];
   const def = entry.id === 'game' ? VIEWS.game(entry.arg)
@@ -695,7 +838,7 @@ function press(b) {
   if (!held) return;
   if (!photoView.hidden) { if (b === 'b' || b === 'a') closePhoto(); return; }
   if (booting) { finishBoot(); return; }
-  if (!cur) return;
+  if (swapping || !cur) return;
   if (modal) { modal.button(b, true); return; }
   if (cur.def.raw) { cur.def.onButton(b, true); return; }
   if (cur.def.onButton && cur.def.onButton(b, true)) return;
@@ -790,7 +933,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) { rel
 
 /* ---------------- touching the screen ---------------- */
 viewEl.addEventListener('click', (e) => {
-  if (!held || !cur || cur.def.raw) return;
+  if (!held || !cur || cur.def.raw || swapping) return;
   if (booting) { finishBoot(); return; }
   const el = e.target.closest('[data-f], [data-act]');
   if (!el || !viewEl.contains(el)) return;
@@ -837,7 +980,7 @@ let resizeTimer = null;
 addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => {
-    if (fit() && cur && on && !booting) {
+    if (fit() && cur && on && !booting && !swapping) {
       // The screen changed shape (the phone rotated): redraw the current screen at the new size.
       leaveView();
       render(true);

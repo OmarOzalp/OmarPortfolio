@@ -40,7 +40,7 @@ const MAP = [
   '.....Ut............v..',
   '......t.S............S',
   '######################',
-  'g:::n::::l::l::::n:::g',
+  'g:n::::::l::l::::n:::g',
   'hBBBBBBBBB::BBBBBBBBBh',
   'hBBBBBBBBB::BBBBBBBBBh',
   'hBBBBBBBBB::BBBBBBBBBh',
@@ -520,7 +520,7 @@ export default function create(host) {
   const held = [];
   let path = null, pathI = 0, goal = null, queued = null;
   let dlg = null, menu = 0, fadeV = 0, fadeD = 0, fadeThen = null;
-  const crab = { x: 4, y: 7, tx: 4, p: 0, mv: false, dir: 1, wait: 1.2, min: 2, max: 8 };
+  const crab = { x: 9, y: 7, tx: 9, p: 0, mv: false, dir: 1, wait: 1.2, min: 7, max: 11 };
   const gull = { x: 13, y: 5, left: true, act: 0, actT: 0, wait: 2 };
   const guard = { x: 17, y: 7 };
 
@@ -580,12 +580,12 @@ export default function create(host) {
       '....#kkkkkk#....'
     ];
     const LEGS_L = [['.....#ss#.......', '....####........'], ['....#s#.#s#.....', '...##...###.....'], ['.....#s#s#......', '....##.##.......']];
-    const pl = { down: [], up: [], left: [], right: [] };
+    const omar = { down: [], up: [], left: [], right: [] };
     for (let f = 0; f < 3; f++) {
-      pl.down.push(bm(HEAD_D.concat(BODY, LEGS[f]), P));
-      pl.up.push(bm(HEAD_U.concat(BODY, LEGS[f]), P));
-      pl.left.push(bm(HEAD_L.concat(BODY_L, LEGS_L[f]), P));
-      pl.right.push(bm(HEAD_L.concat(BODY_L, LEGS_L[f]), P, true));
+      omar.down.push(bm(HEAD_D.concat(BODY, LEGS[f]), P));
+      omar.up.push(bm(HEAD_U.concat(BODY, LEGS[f]), P));
+      omar.left.push(bm(HEAD_L.concat(BODY_L, LEGS_L[f]), P));
+      omar.right.push(bm(HEAD_L.concat(BODY_L, LEGS_L[f]), P, true));
     }
     const G = { '#': C.ink, h: '#8a5426', H: '#b77a3e', s: '#d99a66', n: '#e2453a', N: '#ff7a66', k: C.yellow, w: C.white };
     const guardRows = HEAD_D.slice(0, 5).concat(['..#s########s#..', '..#ssssssssss#..', '...#ssssssss#...'], BODY, LEGS[0]);
@@ -645,7 +645,7 @@ export default function create(host) {
     ];
     const GU = { '#': C.ink, w: C.white, g: '#b8c2d4', G: '#8a95aa', o: '#ff9a3a', y: '#ffc93a' };
     return {
-      pl,
+      pl: omar,
       guard: bm(guardRows, G),
       crab: [bm(crabRows, CR), bm(crab2, CR)],
       gull: { left: [bm(gullStand, GU), bm(gullFlap, GU)], right: [bm(gullStand, GU, true), bm(gullFlap, GU, true)] },
@@ -1216,6 +1216,7 @@ export default function create(host) {
 
   /* ---------- title ---------- */
   const SKY = ['#3b4cc0', '#6a4fd0', '#a64fc4', '#e2508f', '#ff6f6a', '#ff9a4a', '#ffc24a'];
+  const CYCLE = [1, 0, 2, 0], MENU = ['RESUME', 'LEAVE TOWN'];
   function outlined(s, x, y, color, size) {
     for (let dx = -1; dx <= 1; dx++) for (let dy = -1; dy <= 2; dy++) if (dx || dy) pxText(ctx, s, x + dx, y + dy, C.ink, size, 'center');
     pxText(ctx, s, x, y, color, size, 'center');
@@ -1263,7 +1264,7 @@ export default function create(host) {
     if (H >= 180) pxText(ctx, "a stroll through Omar's world", 80, ty + 40, C.white, 10, 'center', 'VT323');
     // Omar strolling, a crab heading the other way
     const s = H >= 180 ? 2 : 1, foot = H - 15;
-    const ox = Math.round((clock * 18) % (W + 40) - 20), fr = [1, 0, 2, 0][(clock * 7 | 0) % 4];
+    const ox = Math.round((clock * 18) % (W + 40) - 20), fr = CYCLE[(clock * 7 | 0) % 4];
     const im = S.pl.right[fr];
     ctx.drawImage(im, ox, foot - 16 * s, 16 * s, 16 * s);
     const cxr = Math.round(W + 20 - (clock * 11) % (W + 40));
@@ -1299,10 +1300,11 @@ export default function create(host) {
   const pageW = () => dlg.totals[dlg.page];
   const lastPage = () => dlg.page === dlg.pages.length - 1;
 
+  const box = { x: 3, y: 0, w: W - 6, h: 0 };
   function dlgBox() {
-    const n = dlg.pages[dlg.page].length, ch = dlg.choice && lastPage() ? 13 : 0;
-    const bh = 9 + n * 11 + ch + 3;
-    return { x: 3, y: H - bh - 3, w: W - 6, h: bh };
+    box.h = 12 + dlg.pages[dlg.page].length * 11 + (dlg.choice && lastPage() ? 13 : 0);
+    box.y = H - box.h - 3;
+    return box;
   }
 
   function drawDialog() {
@@ -1370,10 +1372,9 @@ export default function create(host) {
     rect(ctx, C.white, bx + 2, by + 2, bw - 4, bh - 4);
     rect(ctx, C.navy, bx + 2, by + 2, bw - 4, 14);
     pxText(ctx, 'PAUSED', W / 2, by + 5, C.white, 8, 'center');
-    const items = ['RESUME', 'LEAVE TOWN'];
     for (let i = 0; i < 2; i++) {
       const y = by + 24 + i * 16;
-      pxText(ctx, items[i], bx + 22, y, i === menu ? C.ink : C.grayDark);
+      pxText(ctx, MENU[i], bx + 22, y, i === menu ? C.ink : C.grayDark);
       if (i === menu) arrow(bx + 10, y, C.coral);
     }
   }
@@ -1440,7 +1441,11 @@ export default function create(host) {
     if (g.npc) { const o = g.npc === 'crab' ? crab : g.npc === 'gull' ? gull : guard; tx = o.mv ? o.tx : o.x; ty = o.y; }
     if (g.face) pl.f = g.face;
     else if (tx >= 0 && Math.abs(tx - pl.x) + Math.abs(ty - pl.y) === 1) pl.f = tx > pl.x ? 'right' : tx < pl.x ? 'left' : ty > pl.y ? 'down' : 'up';
-    else return;
+    else {
+      // the crab wandered off: follow it a few more times
+      if (g.npc && (g.tries = (g.tries || 0) + 1) <= 4) { g.goals = neighbors(tx, ty); plan(g); }
+      return;
+    }
     if (g.act) interact();
   }
 
@@ -1546,10 +1551,14 @@ export default function create(host) {
       crab.p += dt / 240;
       if (crab.p >= 1) { crab.x = crab.tx; crab.mv = false; crab.p = 0; crab.wait = Math.random() < 0.6 ? 0.05 : 0.6 + Math.random() * 1.4; }
     } else if (mode === 'walk' && (crab.wait -= s) <= 0) {
+      // it holds still while Omar stands next to it, so it can be talked to
+      const near = Math.abs(pl.x - crab.x) + Math.abs(pl.y - crab.y) <= 1 ||
+        (pl.mv && Math.abs(pl.tx - crab.x) + Math.abs(pl.ty - crab.y) <= 1);
       let nx = crab.x + crab.dir;
       if (nx < crab.min || nx > crab.max || Math.random() < 0.08) { crab.dir = -crab.dir; nx = crab.x + crab.dir; }
       const blocked = (pl.x === nx && pl.y === crab.y) || (pl.mv && pl.tx === nx && pl.ty === crab.y) || solid[idx(nx, crab.y)];
-      if (blocked) { crab.dir = -crab.dir; crab.wait = 0.5; } else { crab.tx = nx; crab.mv = true; crab.p = 0; }
+      if (near) crab.wait = 0.3;
+      else if (blocked) { crab.dir = -crab.dir; crab.wait = 0.5; } else { crab.tx = nx; crab.mv = true; crab.p = 0; }
     }
     gull.actT -= s;
     if (gull.actT <= 0) gull.act = 0;
@@ -1605,7 +1614,7 @@ export default function create(host) {
   }
 
   function leaveAsk() {
-    say('OZ BEACH', 'Leave town?', C.navy, { yes: () => { host.sfx('back'); host.exit(); } });
+    say('OZ BEACH', 'Leave town?', C.navy, { yes: () => host.exit() });
   }
 
   /* ---------- input ---------- */
@@ -1619,7 +1628,7 @@ export default function create(host) {
     if (!down || fadeD > 0) return;
     if (mode === 'title') {
       if (b === 'a' || b === 'start') { host.sfx('select'); fadeD = 1; fadeV = 0; fadeThen = beginWalk; }
-      else if (b === 'b') { host.sfx('back'); host.exit(); }
+      else if (b === 'b') host.exit();
       return;
     }
     if (mode === 'dialog') { dlgButton(b); return; }
@@ -1633,7 +1642,7 @@ export default function create(host) {
     if (DIR[b]) {
       // a quick tap still counts: facing that way it takes a step, otherwise it turns in place
       held.push(b);
-      path = null; queued = null;
+      path = null; queued = null; pl.wantA = false;
       if (!pl.mv && pl.f !== b) { pl.f = b; pl.turn = 90; } else queued = b;
     } else if (b === 'a') {
       path = null;
@@ -1645,7 +1654,7 @@ export default function create(host) {
   function tap(x, y) {
     if (!alive || paused || !ready || fadeD > 0) return;
     if (mode === 'title') {
-      if (x > W - 70 && y > H - 22) { host.sfx('back'); host.exit(); }
+      if (x > W - 70 && y > H - 22) host.exit();
       else button('a', true);
       return;
     }
@@ -1734,7 +1743,7 @@ export default function create(host) {
       return canvas;
     },
     warp(x, y, f = 'down') { pl.x = x; pl.y = y; pl.f = f; pl.mv = false; path = null; },
-    state: () => ({ mode, x: pl.x, y: pl.y, f: pl.f, crab: crab.x, camX, camY })
+    state: () => ({ mode, x: pl.x, y: pl.y, f: pl.f, crab: crab.x, camX, camY, solid: !!solid[idx(pl.x, pl.y)] || !!npcAt(pl.x, pl.y) })
   };
 
   return { start, stop, pause, resume, button, tap, swipe, debug };
