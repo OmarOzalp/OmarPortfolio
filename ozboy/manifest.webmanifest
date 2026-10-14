@@ -1,0 +1,15 @@
+{
+  "name": "Omar Ozalp · OZ BOY",
+  "short_name": "OZ BOY",
+  "description": "Omar Ozalp's portfolio, on a 1998 handheld.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f2d9a8",
+  "theme_color": "#f2d9a8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

@@ -95,6 +95,34 @@ The old ear cups were single-sided domes you could see straight through. The hea
 (dome, rubber rim, foam backing, recessed vents, snaps) held in a worn shape by flat stitched webbing that follows an
 ellipsoid "head": crown strap, rear strap with buckle, chin strap with a chin cup.
 
+## Update — OZ BOY, the phone version
+
+Using a desktop OS with a thumb felt wrong, so phones now get their own device: OZ BOY, a 1998-style handheld.
+`index.html` sends phones and very small windows to `ozboy/` before the desk loads (`?desk` / `?flat` opt out).
+
+Decisions (Q&A with Omar, with mood boards): Clear Duke Blue see-through shell; backlit full-color pixel screen;
+a home menu (work first, life second) plus a bonus beach town to walk around; it first lies on a beach towel and is
+"picked up" to fill the screen; picking it up flicks the power switch and boots it ("OZ BOY" drops, ding); chiptune
+blips, no music; games are Snake (Sea Snake) and a new fishing game (Fish On!).
+
+```
+ozboy/index.html    the towel scene and the handheld's markup
+ozboy/ozboy.css     the device (authored in device px, scaled with CSS zoom), towel, landscape layout, screen UI
+ozboy/ozboy.js      fitting to the phone, pick up / put down / boot, buttons (touch, keyboard), view stack + screens
+ozboy/pixel.js      palette, crisp pixel text, menu icons; shared with the games
+ozboy/games/*.js    town (Beach Walk), fish (Fish On!), snake (Sea Snake); contract + test harness in games/dev.html
+```
+
+- **Screen**: 160 logical px wide and 144–240 tall depending on the phone (taller phones see more). Text is Press Start 2P
+  for labels and VT323 for body copy; content comes from `VFS` (`os/fs.js`) and the desk's `PROPS` copy, so all three
+  versions (desk, handheld, plain page) share one source.
+- **Controls**: D-pad (follows the thumb), A (acts on release so links can open tabs), B back, Start home, Select options
+  (sound, put down, desk/plain versions). Tapping the screen works everywhere. Each screen is a history entry, so the
+  phone's Back gesture walks back through the handheld and finally puts it down.
+- **Games** implement a small contract (`create(host)` → start/stop/pause/resume/button/tap/swipe/press); the town's
+  buildings call `host.open(section)`.
+- Sounds are square-wave additions to `os/sound.js` and share the desk's mute setting.
+
 ## Pending content from Omar
 
 The resume PDF (`RESUME_PDF` in `os/apps.js` and `plain.html`), sketchbook scans, a higher-detail drill if wanted, and real details for some captions (track events/PRs, things built with the

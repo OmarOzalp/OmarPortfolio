@@ -178,8 +178,40 @@ OS.sound = (function() {
       noise(t, 0.6, { type: 'lowpass', freq: 400, gain: 0.25 });
     },
     whoosh: function(t) { noise(t, 0.5, { freq: 500, freqTo: 1800, q: 0.6, gain: 0.06 }); },
-    pick: function(t) { noise(t, 0.05, { freq: 900, q: 1, gain: 0.25 }); tone(220, t, 0.08, { gain: 0.06 }); }
+    pick: function(t) { noise(t, 0.05, { freq: 900, q: 1, gain: 0.25 }); tone(220, t, 0.08, { gain: 0.06 }); },
+
+    // OZ BOY (the handheld on phones): square-wave chiptune blips.
+    blip: function(t) { sq(1480, t, 0.035, 0.03); },
+    select: function(t) { sq(988, t, 0.05, 0.04); sq(1319, t + 0.055, 0.08, 0.04); },
+    back: function(t) { sq(784, t, 0.05, 0.04); sq(523, t + 0.055, 0.08, 0.04); },
+    bump: function(t) { sq(140, t, 0.07, 0.05, 900); },
+    toggle: function(t) { noise(t, 0.015, { freq: 4200, q: 3, gain: 0.3 }); noise(t + 0.05, 0.015, { freq: 3000, q: 3, gain: 0.22 }); },
+    bootding: function(t) {
+      sq(1046.5, t, 0.09, 0.05);
+      sq(2093, t + 0.1, 1.1, 0.045);
+      tone(2093, t + 0.1, 1.3, { gain: 0.05 });
+    },
+    lift: function(t) { noise(t, 0.18, { freq: 700, freqTo: 1600, q: 0.7, gain: 0.08 }); },
+    putdown: function(t) { noise(t, 0.04, { freq: 600, q: 1, gain: 0.3 }); tone(160, t, 0.08, { gain: 0.05 }); },
+    step: function(t) { noise(t, 0.02, { freq: 1300, q: 2, gain: 0.07 }); },
+    door: function(t) { sq(392, t, 0.07, 0.04); sq(523, t + 0.08, 0.07, 0.04); sq(784, t + 0.16, 0.12, 0.04); },
+    cast: function(t) { noise(t, 0.3, { freq: 900, freqTo: 3200, q: 0.8, gain: 0.12 }); sq(660, t, 0.25, 0.02, 2000); },
+    splash: function(t) { noise(t, 0.4, { type: 'lowpass', freq: 1600, freqTo: 250, gain: 0.45 }); },
+    bite: function(t) { sq(1760, t, 0.04, 0.05); sq(1760, t + 0.07, 0.04, 0.05); },
+    reel: function(t) { noise(t, 0.018, { freq: 2600, q: 6, gain: 0.14 }); },
+    snap: function(t) { noise(t, 0.08, { freq: 5000, q: 1, gain: 0.35 }); sq(330, t + 0.04, 0.35, 0.05, 1500); },
+    catch: function(t) {
+      [523.25, 659.25, 783.99, 1046.5].forEach(function(f, i) { sq(f, t + i * 0.08, 0.1, 0.045); });
+      sq(1318.5, t + 0.34, 0.45, 0.045); sq(1046.5, t + 0.34, 0.45, 0.03);
+    },
+    lose: function(t) { [659.25, 587.33, 523.25, 392].forEach(function(f, i) { sq(f, t + i * 0.13, 0.14, 0.04); }); },
+    win: function(t) { [784, 988, 1175, 1568].forEach(function(f, i) { sq(f, t + i * 0.07, 0.12, 0.04); }); }
   };
+
+  // A short, dry square-wave note for the handheld.
+  function sq(freq, t, dur, gain, filter) {
+    tone(freq, t, dur, { type: 'square', gain: gain, filter: filter || 3500, attack: 0.003 });
+  }
 
   function play(name) {
     if (_muted || !SOUNDS[name]) return;

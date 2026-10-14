@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OZ BOY game harness</title>
+<!--
+  Development harness for one OZ BOY game, outside the handheld:  dev.html?game=snake&h=200
+  Keys: arrows = D-pad, Z/Enter/Space = A, X/Esc/Backspace = B, S = Start, O = Select.
+  Click the screen = tap; drag across it = swipe.
+
+  THE GAME CONTRACT (every module in ozboy/games/ default-exports create(host)):
+
+    host.canvas   <canvas> already sized to host.w*host.k by host.h*host.k device pixels
+    host.ctx      its 2D context, transform already set so you draw in logical pixels (0..w, 0..h)
+    host.w, host.h, host.k   logical size (w is always 160; h is 144..240) and the pixel multiple
+    host.sfx(name)           'blip','select','back','bump','eat','die','step','door','cast','splash',
+                             'bite','reel','snap','catch','lose','win'
+    host.vibrate(ms)         short haptic tick where supported
+    host.store.get(key) / host.store.set(key, value)   persisted per game (JSON values)
+    host.exit()              leave the game (back to the GAMES list)
+    host.open(id)            open a section of the handheld: 'about','work','code','resume','dive',
+                             'mat','track','shop','pics','snake','fish'  (the beach town uses it)
+    host.asset(path)         URL for a site asset, e.g. host.asset('assets/photos/thumbs/yellowtail.jpg')
+
+    create(host) returns {
+      start()               show the game's title screen and start its own requestAnimationFrame loop
+      stop()                stop every loop/timer; called when leaving
+      pause() / resume()    the handheld was put down / picked back up
+      button(name, down)    'up','down','left','right','a','b','start','select'; down=true press, false release.
+                            On the title screen, 'b' should call host.exit().
+      tap(x, y)             the player tapped the screen at logical (x, y)
+      swipe(dir)            'up','down','left','right'
+      press(down, x, y)     optional: raw finger down/up on the screen (for hold-to-do-something mechanics);
+                            tap/swipe are still delivered on release
+    }
+-->
+<style>
+  @font-face { font-family: 'PS2P'; src: url('../../assets/fonts/press-start-2p-latin-400-normal.woff2') format('woff2'); }
+  @font-face { font-family: 'VT323'; src: url('../../assets/fonts/vt323-latin-400-normal.woff2') format('woff2'); }
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #23262f; color: #ccd; font: 13px system-ui; }
+  #wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  canvas { image-rendering: pixelated; background: #000; touch-action: none; border: 10px solid #3d4150; border-radius: 6px; }
+  #log { font: 12px ui-monospace, monospace; color: #9ab; min-height: 16px; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="screen"></canvas><div id="log"></div></div>
+<script src="../../os/sound.js"></script>
+<script type="module">
+  import { makeCanvas } from '../pixel.js';
+  const q = new URLSearchParams(location.search);
+  const name = q.get('game') || 'snake';
+  const W = 160, H = +(q.get('h') || 200), K = +(q.get('k') || 3);
+  await Promise.all([document.fonts.load('8px PS2P'), document.fonts.load('10px VT323')]);
+  const { canvas, ctx } = makeCanvas(W, H, K, document.getElementById('screen'));
+  canvas.style.width = W * K + 'px';
+  canvas.style.height = H * K + 'px';
+  const log = (s) => { document.getElementById('log').textContent = s; window.__log = (window.__log || []).concat(s); };
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem(`ozboy.${name}.${k}`)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem(`ozboy.${name}.${k}`, JSON.stringify(v)); } catch (e) {} }
+  };
+  const host = {
+    canvas, ctx, w: W, h: H, k: K, store,
+    sfx: (n) => window.OS.sound.play(n),
+    vibrate: (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} },
+    exit: () => log('exit()'),
+    open: (id) => log(`open(${id})`),
+    asset: (p) => '../../' + p
+  };
+  const game = (await import(`./${name}.js`)).default(host);
+  window.__game = game;
+  game.start();
+
+  const KEYS = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', z: 'a', Z: 'a', Enter: 'a', ' ': 'a',
+    x: 'b', X: 'b', Escape: 'b', Backspace: 'b', s: 'start', S: 'start', o: 'select', O: 'select' };
+  addEventListener('keydown', (e) => { const b = KEYS[e.key]; if (b) { e.preventDefault(); if (!e.repeat) game.button(b, true); } });
+  addEventListener('keyup', (e) => { const b = KEYS[e.key]; if (b) game.button(b, false); });
+  let down = null;
+  const pt = (e) => { const r = canvas.getBoundingClientRect(); return [(e.clientX - r.left - 10) / (r.width - 20) * W, (e.clientY - r.top - 10) / (r.height - 20) * H]; };
+  canvas.addEventListener('pointerdown', (e) => { down = pt(e); if (game.press) game.press(true, down[0], down[1]); });
+  canvas.addEventListener('pointerup', (e) => {
+    if (!down) return;
+    const [x, y] = pt(e), dx = x - down[0], dy = y - down[1];
+    if (game.press) game.press(false, x, y);
+    if (Math.hypot(dx, dy) < 8) game.tap(down[0], down[1]);
+    else game.swipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'right' : 'left') : (dy > 0 ? 'down' : 'up'));
+    down = null;
+  });
+</script>
+</body>
+</html>
