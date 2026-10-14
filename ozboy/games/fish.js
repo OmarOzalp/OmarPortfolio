@@ -12,6 +12,8 @@ const BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 const TAPER = [0, 0, 1, 2, 4, 6, 9];
 const ANGLES = [-40, -20, 0, 20, 40];
 const ACTIVE = { fly: 1, wait: 1, bite: 1, hooked: 1, fight: 1, landed: 1 };
+// The bobber, row by row: x offset, width, color, y offset from its waterline.
+const BOBBER = [[0, 1, C.ink, -6], [0, 1, C.ink, -5], [-1, 3, C.red, -4], [-2, 5, C.red, -3], [-2, 5, C.white, -2], [-1, 3, C.white, -1]];
 
 /* ---------------- fish ---------------- */
 // Body half-height along the fish, u = 0 at the tail and 1 at the nose.
@@ -848,9 +850,8 @@ export default function create(host) {
   // A red-and-white bobber floating with its waterline at y; dip pushes it under.
   function drawBobber(x, y, dip) {
     x = Math.round(x); y = Math.round(y) + dip;
-    const rows = [[0, 1, C.ink, -6], [0, 1, C.ink, -5], [-1, 3, C.red, -4], [-2, 5, C.red, -3], [-2, 5, C.white, -2], [-1, 3, C.white, -1]];
-    for (let i = 0; i < rows.length; i++) {
-      const r = rows[i], yy = y + r[3] + 1;
+    for (let i = 0; i < BOBBER.length; i++) {
+      const r = BOBBER[i], yy = y + r[3] + 1;
       if (yy > waterY) continue;
       rect(ctx, r[2], x + r[0], yy, r[1], 1);
     }
@@ -1096,7 +1097,10 @@ export default function create(host) {
       case 'wait': miss('early'); break;
       case 'bite': hookIt(); break;
       case 'card':
-        if (kd.id === 'yellowtail' && !(src === 'touch' && x > W / 2 && y > H / 2 + 30)) { host.sfx('select'); host.open('pics'); }
+        if (kd.id === 'yellowtail' && !(src === 'touch' && x > W / 2 && y > Math.round((H - CH) / 2) + 100)) {
+          host.sfx('select');
+          host.open('pics');
+        }
         else { host.sfx('select'); beginCast(); }
         break;
       case 'msg': if (pt > 0.35) beginCast(); break;
@@ -1135,7 +1139,11 @@ export default function create(host) {
     else if (name === 'start') {
       if (logOpen) closeLog();
       else if (phase === 'title') { host.sfx('select'); beginCast(); }
-      else { paused = !paused; host.sfx(paused ? 'blip' : 'select'); }
+      else {
+        paused = !paused;
+        if (paused && charging) { charging = false; power = 0; }
+        host.sfx(paused ? 'blip' : 'select');
+      }
     } else if (name === 'select' && !paused) {
       if (logOpen) closeLog();
       else if (phase === 'title' || phase === 'card' || phase === 'msg' || (phase === 'cast' && !charging)) openLog();

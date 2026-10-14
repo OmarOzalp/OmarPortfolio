@@ -37,7 +37,7 @@ const MAP = [
   '.P..c...S..Ut..LL...P.',
   '............t..LL.....',
   '.....Ut............v..',
-  '......t..S...........S',
+  '......t.S............S',
   '######################',
   'g::::::::l::l::::::::g',
   'hBBBBBBBBB::BBBBBBBBBh',
@@ -83,7 +83,7 @@ const PLACES = [
 ];
 
 const SIGNS = {
-  '9,9': ['OZ BEACH', 'Walk into any building to explore.'],
+  '8,9': ['OZ BEACH', 'Walk into any building to explore.'],
   '8,6': ['PIER', 'Fish bite best at the very end. Bring patience.'],
   '21,9': ['EAST END', 'Past this sign: problem sets. Turn back.']
 };
@@ -282,10 +282,11 @@ const BUILD = {
     rect(g, '#a4472c', dx + 1, y + 43, 14, 21);
     frame(g, C.cream, dx + 1, y + 43, 14, 21);
     for (let i = 0; i < 19; i++) {
-      const a = dx + 2 + Math.round(i * 11 / 18);
-      rect(g, C.cream, a, y + 44 + i, 1, 1);
-      rect(g, C.cream, dx + 13 - (a - dx - 2), y + 44 + i, 1, 1);
+      const a = Math.round(i * 11 / 18);
+      rect(g, C.cream, dx + 2 + a, y + 44 + i, 1, 1);
+      rect(g, C.cream, dx + 13 - a, y + 44 + i, 1, 1);
     }
+    rect(g, C.ink, dx + 7, y + 43, 2, 21);
     // saw blade sign
     disc(g, C.ink, x + 15, y + 44, 8);
     disc(g, '#c9d1dc', x + 15, y + 44, 7);
@@ -300,9 +301,9 @@ const BUILD = {
     rect(g, C.ink, 15 * T + 13, y + 35, 2, 14);
     // stack of lumber by the wall
     for (let i = 0; i < 3; i++) {
-      rect(g, C.ink, x + 25, y + 54 + i * 3, 14, 3);
-      rect(g, '#e0b27a', x + 26, y + 55 + i * 3, 12, 1);
-      rect(g, '#b88444', x + 37, y + 55 + i * 3, 1, 1);
+      rect(g, C.ink, x + 53, y + 54 + i * 3, 22, 3);
+      rect(g, '#e0b27a', x + 54, y + 55 + i * 3, 20, 1);
+      rect(g, '#b88444', x + 73 - i * 3, y + 55 + i * 3, 1, 1);
     }
     signBoard(g, x + w / 2, y + 17, 'WOODSHOP', C.woodDark, C.cream);
   },
@@ -398,9 +399,9 @@ const BUILD = {
     rect(g, '#1b2440', x + 1, y + 1, w - 2, 22);
     rect(g, '#2d3a5e', x + 3, y + 3, w - 6, 16);
     for (let i = 0; i < 4; i++) {
-      rect(g, C.ink, x + 30 + i * 11, y + 6, 8, 8);
-      rect(g, '#4a5a85', x + 31 + i * 11, y + 7, 6, 6);
-      for (let j = 0; j < 3; j++) rect(g, '#2d3a5e', x + 31 + i * 11, y + 8 + j * 2, 6, 1);
+      rect(g, C.ink, x + 26 + i * 11, y + 4, 8, 8);
+      rect(g, '#4a5a85', x + 27 + i * 11, y + 5, 6, 6);
+      for (let j = 0; j < 3; j++) rect(g, '#2d3a5e', x + 27 + i * 11, y + 6 + j * 2, 6, 1);
     }
     rect(g, C.green, x + 3, y + 19, w - 6, 1);
     rect(g, '#0f1630', x + 1, y + 21, w - 2, 2);
@@ -424,7 +425,7 @@ const BUILD = {
     rect(g, '#6b7589', dx + 5, y + 44, 1, 20);
     rect(g, C.ink, dx + 13, y + 50, 3, 5);
     rect(g, C.green, dx + 14, y + 51, 1, 1);
-    signBoard(g, x + w / 2, y + 26, 'CODE LAB', '#0b1020', C.green);
+    signBoard(g, x + w / 2, y + 17, 'CODE LAB', '#0b1020', C.green);
   },
 
   pics(g, x, y, w) {
@@ -551,18 +552,18 @@ export default function create(host) {
       '...#hhhhhhhh#...'
     ];
     const HEAD_L = [
-      '....#######.....',
-      '...#hhhhhhh#....',
-      '..#hhhHHhhhh#...',
+      '....########....',
+      '...#hhhhhhhh#...',
       '..#hhhhhhhhhh#..',
-      '.#sshhhhhhhhh#..',
-      '.#s#sshhhhhhh#..',
-      '.#ssssssshhh#...',
-      '..##ssssss##....'
+      '..#hhhHHhhhhh#..',
+      '..#sshhhhhhhh#..',
+      '.#ss#sshhhhhh#..',
+      '.#sssssshhhh#...',
+      '..##sssssss#....'
     ];
     const BODY = [
       '...#nnnnnnnn#...',
-      '..#nnnNnnnnnn#..',
+      '..#nnnnnnnnnn#..',
       '..#snnnnnnnns#..',
       '..#s#kkkkkk#s#..',
       '...#kkkkkkkk#...',
@@ -570,14 +571,14 @@ export default function create(host) {
     ];
     const LEGS = [['....#ss##ss#....', '....###..###....'], ['....#ss#.###....', '....###.........'], ['....###.#ss#....', '.........###....']];
     const BODY_L = [
-      '....#nnnnnn#....',
       '...#nnnnnnnn#...',
-      '...#nnnsnnnn#...',
-      '...#kkkskkkk#...',
+      '...#nnnnnnnn#...',
+      '...#nnn#nnnn#...',
+      '...#kk#s#kkk#...',
       '...#kkkkkkkk#...',
       '....#kkkkkk#....'
     ];
-    const LEGS_L = [['.....#ss#s#.....', '....###.##......'], ['....#ss#.#ss#...', '...###...###....'], ['.....#sss#......', '.....####.......']];
+    const LEGS_L = [['.....#ss#.......', '....####........'], ['....#s#.#s#.....', '...##...###.....'], ['.....#s#s#......', '....##.##.......']];
     const pl = { down: [], up: [], left: [], right: [] };
     for (let f = 0; f < 3; f++) {
       pl.down.push(bm(HEAD_D.concat(BODY, LEGS[f]), P));
@@ -585,7 +586,7 @@ export default function create(host) {
       pl.left.push(bm(HEAD_L.concat(BODY_L, LEGS_L[f]), P));
       pl.right.push(bm(HEAD_L.concat(BODY_L, LEGS_L[f]), P, true));
     }
-    const G = { '#': C.ink, h: '#f2c35a', H: '#ffe08a', s: '#d99a66', n: '#e2453a', N: '#ff7a66', k: C.yellow, w: C.white };
+    const G = { '#': C.ink, h: '#8a5426', H: '#b77a3e', s: '#d99a66', n: '#e2453a', N: '#ff7a66', k: C.yellow, w: C.white };
     const guardRows = HEAD_D.slice(0, 5).concat(['..#s########s#..', '..#ssssssssss#..', '...#ssssssss#...'], BODY, LEGS[0]);
     guardRows[9] = '..#nnnwNnnnnn#..';
     const crabRows = [
@@ -788,14 +789,24 @@ export default function create(host) {
   }
 
   function drawDish(g) {
-    rect(g, C.ink, 7, 9, 2, 7);
-    rect(g, '#8a95a8', 7, 9, 1, 7);
-    for (let j = 0; j < 9; j++) {
-      const hw = Math.round(6 * Math.sqrt(1 - Math.pow((j - 4) / 5, 2)));
-      rect(g, C.ink, 7 - hw, j, hw * 2 + 1, 1);
-      if (hw > 1) rect(g, j < 4 ? C.white : '#c9d1dc', 8 - hw, j, hw * 2 - 1, 1);
-    }
-    rect(g, C.ink, 7, 3, 2, 2);
+    bitmap(g, [
+      '.....######.....',
+      '...##......#....',
+      '..#.ww.....#....',
+      '.#.ww......g#...',
+      '.#.w.....gg.#...',
+      '#.......gg..#...',
+      '#.....###...#...',
+      '#.....#y#..g#...',
+      '#.....###.gg#...',
+      '.#.......gg#....',
+      '.##....ggg##....',
+      '..###gggg##.....',
+      '....######......',
+      '......##........',
+      '.....#gg#.......',
+      '....######......'
+    ], 0, 0, 1, { '#': C.ink, '.': '#dfe5ee', w: C.white, g: '#9aa3b8', y: C.red });
   }
 
   /* ---------- the static map ---------- */
@@ -1111,7 +1122,7 @@ export default function create(host) {
     }
     // flags
     drawFlag(15 * T + 30, 8 * T - 56, 8, 5, C.red, null);
-    if (camY < 210) { rect(ctx, C.ink, 82 - camX, 178 - camY, 1, 16); drawFlag(83, 179, 10, 7, C.red, C.white); }
+    if (camY < 210) { rect(ctx, C.ink, 82 - camX, 178 - camY, 1, 20); rect(ctx, C.ink, 81 - camX, 197 - camY, 3, 1); drawFlag(83, 179, 10, 7, C.red, C.white); }
     if (camY > 120 && camY < 300) drawFlag(16 * T + 40, 18 * T - 29, 7, 4, X.duke, null);
     // arcade marquee bulbs
     if (camY < 270 && camX + W > 272) {
