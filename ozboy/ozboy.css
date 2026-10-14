@@ -319,37 +319,73 @@ body.rest .ctl { pointer-events: none; }
 .grill { position: absolute; left: 222px; top: 124px; display: flex; gap: 7px; transform: rotate(-30deg); }
 .grill i { width: 5px; height: 44px; border-radius: 3px; background: rgba(0, 0, 0, .28); box-shadow: inset 0 2px 3px rgba(0, 0, 0, .45), 0 1px 0 rgba(255, 255, 255, .25); }
 
-/* the cartridge in the slot on top: it sits behind the shell, so only the top sticks out */
-.slotcart {
-  position: absolute; left: 85px; top: -44px; width: 130px; height: 120px;
+/* cartridges: the one in the slot sits behind the shell, so only its top sticks out;
+   #flycart is the same cartridge flying across the screen on its way in or out */
+.cartbody {
   border-radius: 7px 7px 3px 3px;
   background: linear-gradient(90deg, #8a8e97, #bcc0c9 12%, #aeb2bb 88%, #868a93);
   box-shadow: inset 0 2px 0 rgba(255, 255, 255, .55), inset 0 -3px 0 rgba(0, 0, 0, .12);
-  transform: translateY(-440px); visibility: hidden;
 }
-.slotcart.in { visibility: visible; animation: cartin .62s cubic-bezier(.45, 0, .75, 1) forwards; }
-.slotcart.out { visibility: visible; animation: cartout .5s cubic-bezier(.3, 0, .8, .6) forwards; }
+.cartbody .grip { position: absolute; left: 8px; right: 8px; top: 5px; height: 9px; border-radius: 2px;
+  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 2px, rgba(255, 255, 255, .3) 2px 3px, transparent 3px 6px); }
+.cartbody .label { position: absolute; left: 10px; right: 10px; top: 17px; height: 92px; border-radius: 3px; overflow: hidden;
+  background: #fff; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 1px 0 rgba(0, 0, 0, .25); }
+.cartbody .label b { display: block; height: 15px; padding-top: 4px; text-align: center; font: 7px 'PS2P', monospace; font-weight: 400; color: #fff; background: var(--cart-c, var(--navy)); }
+.cartbody .label span { display: block; height: 77px; background-size: 100% 100%; image-rendering: pixelated; }
+
+.slotcart { position: absolute; left: 85px; top: -44px; width: 130px; height: 120px; visibility: hidden; transform: translateY(-76px); }
 .slotcart.seated { visibility: visible; transform: none; }
-@keyframes cartin {
-  0% { transform: translateY(-440px); }
-  72% { transform: translateY(5px); }
-  86% { transform: translateY(-2px); }
+.slotcart.push { visibility: visible; animation: cartpush .36s cubic-bezier(.6, 0, .9, .6) forwards; }
+.slotcart.pop { visibility: visible; animation: cartpop .3s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+@keyframes cartpush {
+  0% { transform: translateY(-76px); }
+  58% { transform: translateY(5px); animation-timing-function: ease-out; }
+  78% { transform: translateY(-2px); }
   100% { transform: translateY(0); }
 }
-@keyframes cartout {
-  0% { transform: translateY(0); }
-  22% { transform: translateY(-16px); }
-  34% { transform: translateY(-11px); }
-  100% { transform: translateY(-440px); }
+@keyframes cartpop { 0% { transform: translateY(0); } 55% { transform: translateY(-92px); } 100% { transform: translateY(-76px); } }
+
+#flycart { position: fixed; z-index: 7; display: none; pointer-events: none; filter: drop-shadow(0 18px 16px rgba(0, 0, 0, .45)); }
+#flycart .cartbody { position: relative; width: 130px; height: 120px; zoom: var(--fz, 1); }
+#flycart.in { display: block; animation: flyin 1.15s forwards; }
+#flycart.out { display: block; animation: flyout .76s forwards; }
+@keyframes flyin {
+  0% { transform: translate(var(--x0), var(--y0)) rotate(28deg) scale(1.45); animation-timing-function: cubic-bezier(.2, .75, .3, 1); }
+  42% { transform: translate(var(--x1), var(--y1)) rotate(-5deg) scale(1.65); animation-timing-function: ease-in-out; }
+  64% { transform: translate(var(--x1), calc(var(--y1) - 8px)) rotate(0deg) scale(1.7); animation-timing-function: cubic-bezier(.55, 0, .8, .45); }
+  100% { transform: translate(0, 0) rotate(0deg) scale(1); }
 }
-.slotcart .grip { position: absolute; left: 8px; right: 8px; top: 5px; height: 9px; border-radius: 2px;
-  background: repeating-linear-gradient(90deg, rgba(0, 0, 0, .22) 0 2px, rgba(255, 255, 255, .3) 2px 3px, transparent 3px 6px); }
-.slotcart .label { position: absolute; left: 10px; right: 10px; top: 17px; height: 92px; border-radius: 3px; overflow: hidden;
-  background: #fff; box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .7), 0 1px 0 rgba(0, 0, 0, .25); }
-.slotcart .label b { display: block; height: 15px; padding-top: 4px; text-align: center; font: 7px 'PS2P', monospace; font-weight: 400; color: #fff; background: var(--cart-c, var(--navy)); }
-.slotcart .label span { display: block; height: 77px; background-size: 100% 100%; image-rendering: pixelated; }
-#boy.seat { animation: seat .16s ease-out; }
-@keyframes seat { 40% { transform: translateY(2px); } }
+@keyframes flyout {
+  0% { transform: translate(0, 0) rotate(0deg) scale(1); animation-timing-function: cubic-bezier(.2, .6, .4, 1); }
+  38% { transform: translate(calc(var(--x1) * .5), calc(var(--y1) * .45)) rotate(-8deg) scale(1.4); animation-timing-function: cubic-bezier(.6, 0, .9, .6); }
+  100% { transform: translate(var(--x0), var(--y0)) rotate(30deg) scale(1.5); }
+}
+#flycart.in .label::after {   /* the label catching the light */
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, .8) 50%, transparent 65%);
+  transform: translateX(-130%); animation: shine .5s .52s ease-in-out forwards;
+}
+@keyframes shine { to { transform: translateX(130%); } }
+
+#dim {
+  position: absolute; inset: 0; z-index: 6; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: radial-gradient(120% 90% at 50% 38%, rgba(10, 14, 26, .3), rgba(10, 14, 26, .7));
+}
+body.swapping #dim { opacity: 1; }
+
+/* the moment it seats: the handheld jolts, a flash of light at the slot, and the screen flashes on */
+#boy.seat { animation: seat .3s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes seat { 30% { transform: translateY(6px) rotate(-.8deg); } 60% { transform: translateY(-2px) rotate(.3deg); } }
+.spark { position: absolute; left: 150px; top: 0; width: 0; height: 0; pointer-events: none; }
+.spark.go::before {
+  content: ''; position: absolute; left: -100px; top: -16px; width: 200px; height: 32px;
+  background: radial-gradient(closest-side, rgba(255, 255, 255, .95), rgba(255, 246, 200, .5) 45%, rgba(255, 255, 255, 0));
+  animation: sparkb .42s ease-out forwards;
+}
+@keyframes sparkb { from { transform: scaleX(.3); opacity: 1; } to { transform: scaleX(1.4); opacity: 0; } }
+#screen.pflash .glass { animation: pflash .4s ease-out; }
+@keyframes pflash { 0% { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, .9); } 100% { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0); } }
+body.land .spark { left: 300px; }
 body.land .slotcart { left: 235px; }
 
 /* landscape: a wide handheld, screen in the middle, controls under the thumbs */

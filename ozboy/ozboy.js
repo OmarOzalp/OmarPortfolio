@@ -70,7 +70,7 @@ function fit() {
   lcd.style.setProperty('--lz', lz);
   lcd.style.setProperty('--lcdh', lcdh + 'px');
   const changed = !fitted || fitted.land !== land || fitted.lcdh !== lcdh;
-  fitted = { land, z, lz, lcdh, hd };
+  fitted = { land, z, lz, lcdh, hd, hx, hy };
   if (changed) paintGuts();
   return changed;
 }
@@ -114,6 +114,7 @@ function pickUp(then) {
 function putDown() {
   if (!held) return;
   held = false;
+  finishSwap();
   closeModal();
   pauseView();
   release();
@@ -458,40 +459,73 @@ function setPower(isOn) {
 }
 
 // Power off, eject whatever is in, slide the new cartridge down into the slot (clunk), power on.
+// The cartridge's spot when it is lined up just above the slot, in page pixels.
+function slotGeom() {
+  const z = fitted.z;
+  return { x: fitted.hx + (fitted.land ? 235 : 85) * z, y: fitted.hy - 120 * z, w: 130 * z, h: 120 * z, z };
+}
+
+function dressCart(el, g) {
+  $('.label b', el).textContent = g.name;
+  el.style.setProperty('--cart-c', g.color);
+  $('.label span', el).style.backgroundImage = `url(${cartArt(g.id)})`;
+}
+
+const flycart = $('#flycart');
+function placeFly() {
+  const s = slotGeom(), W = innerWidth, H = innerHeight;
+  const cx = s.x + s.w / 2, cy = s.y + s.h / 2;
+  const screenY = fitted.land ? fitted.hy + 150 * s.z : fitted.hy + (20 + (fitted.hd - 270) / 2) * s.z;
+  Object.assign(flycart.style, { left: s.x + 'px', top: s.y + 'px', width: s.w + 'px', height: s.h + 'px' });
+  const v = { '--fz': s.z, '--x0': W + s.w - cx + 30, '--y0': H * 0.72 - cy, '--x1': W / 2 - cx, '--y1': screenY - cy };
+  Object.entries(v).forEach(([k, n]) => flycart.style.setProperty(k, k === '--fz' ? n : n + 'px'));
+}
+
+const slot = (state) => { slotcart.className = 'slotcart cartbody' + (state ? ' ' + state : ''); };
+function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+
+// The cartridge swap, staged: the beach dims and the power clicks off; whatever is in the slot springs out
+// and flies off; the new cartridge sweeps in from the side of the phone, hangs in front of the screen so
+// its label catches the light, then is pushed into the slot (clunk, jolt, flash) and the power comes on.
 function swapCart(want, restore) {
   leaveView();
   const token = swapping = {};
-  const quick = reduceMotion;
-  const later = (fn, ms) => setTimeout(() => { if (swapping === token) fn(); }, quick ? 0 : ms);
+  const at = (ms, fn) => setTimeout(() => { if (swapping === token) fn(); }, reduceMotion ? 0 : ms);
   setPower(false);
+  body.classList.add('swapping');
   sound.play('toggle');
-  let t = 200;
+  let t = 150;
   if (cartIn) {
-    later(() => { slotcart.className = 'slotcart out'; sound.play('eject'); }, t);
-    t += 520;
+    const old = GAMES.find((x) => x.id === cartIn) || GAMES[0];
+    at(t, () => { slot('pop'); sound.play('eject'); });
+    at(t + 300, () => { dressCart(flycart, old); placeFly(); slot(''); flycart.className = 'out'; sound.play('cartfly'); });
+    t += 300 + 780;
   }
   cartIn = want;
   if (want) {
     const g = GAMES.find((x) => x.id === want) || GAMES[0];
     pickIdx = GAMES.indexOf(g);
-    later(() => {
-      $('.label b', slotcart).textContent = g.name;
-      slotcart.style.setProperty('--cart-c', g.color);
-      $('.label span', slotcart).style.backgroundImage = `url(${cartArt(g.id)})`;
-      slotcart.className = 'slotcart in';
-      sound.play('cartin');
-    }, t);
-    later(() => { boy.classList.remove('seat'); void boy.offsetWidth; boy.classList.add('seat'); buzz(14); }, t + 440);
-    t += 760;
+    at(t, () => { dressCart(flycart, g); dressCart(slotcart, g); placeFly(); flycart.className = 'in'; sound.play('cartfly'); });
+    at(t + 560, () => sound.play('sparkle'));
+    at(t + 1150, () => { flycart.className = ''; slot('push'); });
+    at(t + 1360, () => { sound.play('clunk'); replay(boy, 'seat'); replay($('.spark', boy), 'go'); buzz(25); });
+    t += 1150 + 380;
   }
-  later(() => {
+  token.finish = () => {
     swapping = null;
-    slotcart.className = cartIn ? 'slotcart seated' : 'slotcart';
+    flycart.className = '';
+    slot(cartIn ? 'seated' : '');
+    body.classList.remove('swapping');
     setPower(true);
+    replay(screenEl, 'pflash');
     sound.play('toggle');
     draw(restore);
-  }, t + 100);
+  };
+  at(t + 160, token.finish);
 }
+
+// Jump to the end of a swap (the handheld is being put down mid-animation).
+function finishSwap() { if (swapping && swapping.finish) swapping.finish(); }
 
 function draw(restore) {
   leaveView();
