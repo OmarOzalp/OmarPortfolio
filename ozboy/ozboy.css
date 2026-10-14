@@ -136,21 +136,30 @@ a { color: inherit; }
 }
 .pills button + button { background: #fff; color: var(--ink); }
 .pills button:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0, 0, 0, .3); }
-.alt {
+.foot {
   position: absolute; z-index: 4; left: 0; right: 0; bottom: calc(var(--safe-b) + 14px); margin: 0;
   text-align: center; font: 13px system-ui, sans-serif; color: #3b2a14;
   transition: opacity .3s;
 }
-.alt a { font-weight: 600; }
-.alt span { opacity: .7; }
+.foot a { font-weight: 600; }
+.foot span { opacity: .7; }
 
 /* held: the towel drops away, the chrome swaps */
 body.held .towel { transform: rotate(-3deg) scale(1.06); filter: brightness(.88) saturate(.9); }
-body.held .tag, body.held #hint, body.held .alt { opacity: 0; pointer-events: none; }
+body.held .tag, body.held #hint, body.held .foot { opacity: 0; pointer-events: none; }
 body.held .tag { transform: translateX(-50%) translateY(-20px) rotate(-2deg); }
 body.held .pills { opacity: 0; transform: translateY(30px); pointer-events: none; }
 body.held #putdown { opacity: 1; pointer-events: auto; }
 body.booting #hint { opacity: 0; }
+
+/* landscape: the chrome tucks into the margins beside the handheld */
+body.land #hint { display: none; }
+body.land .tag { left: 16px; transform: rotate(-2deg); }
+body.land.held .tag { transform: translateY(-20px) rotate(-2deg); }
+body.land .pills { left: auto; right: 16px; width: 250px; }
+body.land #putdown { left: 6px; width: 36px; padding: 0; }
+body.land #putdown span { display: none; }
+body.land #mute { right: 6px; }
 
 /* ---------------- the handheld ---------------- */
 #stage { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 50% 35%; }
@@ -165,14 +174,14 @@ body.booting #hint { opacity: 0; }
 }
 body.rest #holder {
   cursor: pointer;
-  transform: translate3d(0, var(--rest-dy), 0) scale(var(--rest-s)) rotateX(24deg) rotateZ(-5deg);
+  transform: translate3d(var(--rest-dx, 0px), var(--rest-dy), 0) scale(var(--rest-s)) rotateX(24deg) rotateZ(-5deg);
 }
 #shadow {
   border-radius: 12%;
   background: rgba(70, 35, 0, .5);
   filter: blur(14px);
   transition: transform .62s cubic-bezier(.2, .9, .25, 1.06), opacity .62s;
-  transform: translate3d(14px, calc(var(--rest-dy) + 26px), 0) scale(var(--rest-s)) rotateX(24deg) rotateZ(-5deg) scaleY(.92);
+  transform: translate3d(calc(var(--rest-dx, 0px) + 14px), calc(var(--rest-dy) + 26px), 0) scale(var(--rest-s)) rotateX(24deg) rotateZ(-5deg) scaleY(.92);
   opacity: .55;
 }
 body.held #shadow { transform: translate3d(0, 34px, -60px) scale(1.04); opacity: .22; }

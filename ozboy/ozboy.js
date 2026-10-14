@@ -31,10 +31,10 @@ function fit() {
   const safeT = parseFloat(cs.paddingTop) || 0, safeB = parseFloat(cs.paddingBottom) || 0;
   const land = W > H && H < 560;
   body.classList.toggle('land', land);
-  let z, hd, hx, hy, lz, lcdh, restDy, restS;
+  let z, hd, hx, hy, lz, lcdh, restDy, restS, restDx = 0;
   if (!land) {
     const top = safeT + 56, bot = safeB + 12, avail = H - top - bot;
-    z = W / 300;
+    z = Math.min(W - 16, 520) / 300;
     hd = avail / z;
     if (hd < 512) { z = avail / 512; hd = 512; }
     hd = Math.min(hd, 660);
@@ -42,8 +42,8 @@ function fit() {
     hy = top + (avail - hd * z) / 2;
     lz = 228 / 160;
     lcdh = Math.max(144, Math.min(240, Math.floor((hd - 306) / lz)));
-    const restTop = safeT + 104, restBot = H - safeB - 136;
-    restS = Math.min(0.8, (restBot - restTop) / (hd * z * 0.93));
+    const restTop = safeT + 104, restBot = H - safeB - 168;
+    restS = Math.min(0.74, (restBot - restTop) / (hd * z * 1.02));
     restDy = (restTop + restBot) / 2 - (hy + hd * z / 2);
   } else {
     z = Math.min(W / 600, (H - 16) / 300);
@@ -52,8 +52,10 @@ function fit() {
     hy = (H - 300 * z) / 2;
     lz = Math.min(256 / 160, 208 / 144);
     lcdh = Math.max(144, Math.min(240, Math.floor(208 / lz)));
-    restS = 0.62;
-    restDy = 10;
+    const restTop = safeT + 84, restBot = H - safeB - 100;
+    restS = Math.min(0.62, (restBot - restTop) / (300 * z * 1.05));
+    restDy = (restTop + restBot) / 2 - (hy + 150 * z);
+    restDx = -Math.min(80, W * 0.08);
   }
   const s = document.documentElement.style;
   s.setProperty('--hx', hx + 'px');
@@ -61,6 +63,7 @@ function fit() {
   s.setProperty('--hw', (land ? 600 : 300) * z + 'px');
   s.setProperty('--hh', hd * z + 'px');
   s.setProperty('--rest-dy', restDy + 'px');
+  s.setProperty('--rest-dx', restDx + 'px');
   s.setProperty('--rest-s', restS);
   holder.style.setProperty('--z', z);
   boy.style.setProperty('--hd', hd + 'px');
@@ -208,10 +211,10 @@ const GAMES = [
   { id: 'snake', name: 'SEA SNAKE', sub: 'Snake, but underwater', icon: 'snake' }
 ];
 
-function photoBlock(id, pos) {
+function photoBlock(id, style) {
   const ph = VFS.photo(id);
   if (!ph) return '';
-  return `<div class="phwrap" data-f data-act="zoom" data-arg="${id}"><img class="ph" src="${asset(ph.thumb)}" alt="${esc(ph.caption)}"${pos ? ` style="object-position:${pos}"` : ''}>` +
+  return `<div class="phwrap" data-f data-act="zoom" data-arg="${id}"><img class="ph" src="${asset(ph.thumb)}" alt="${esc(ph.caption)}"${style ? ` style="${style}"` : ''}>` +
     `<div class="cap"><span>${esc(ph.caption)}</span><span>A: ZOOM</span></div></div>`;
 }
 
@@ -234,7 +237,7 @@ const VIEWS = {
   about: () => ({
     title: 'ABOUT',
     text: true,
-    html: photoBlock('me', '50% 22%') +
+    html: photoBlock('me', 'object-position:50% 54%;height:110px') +
       `<div class="h">${esc(P.name.toUpperCase())}</div><p class="k">${esc(P.headline)}</p>${paras([P.bio])}` +
       `<div class="grp">Say hi</div>` +
       `<div class="row" data-f data-href="mailto:${P.links.email}"><span class="ic">@</span><span class="tx">EMAIL<small>${esc(P.links.email)}</small></span><span class="go">&gt;</span></div>` +
