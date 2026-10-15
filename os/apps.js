@@ -43,7 +43,7 @@
     bodyClass: 'padded',
     render: function() {
       return '<div class="about-wrap">' +
-        '<div class="about-photo"><img src="' + asset(VFS.photo('me').thumb) + '" alt="Omar Ozalp at Duke Chapel"></div>' +
+        '<div class="about-photo"><img src="' + asset(VFS.photo('me').headshot) + '" alt="Omar Ozalp at Duke Chapel"></div>' +
         '<div>' +
           '<h2>' + esc(P.name) + '</h2>' +
           '<p><b>' + esc(P.headline) + '</b></p>' +

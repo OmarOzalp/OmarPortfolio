@@ -272,7 +272,7 @@ function cartArt(id) {
 function photoBlock(id, style) {
   const ph = VFS.photo(id);
   if (!ph) return '';
-  return `<div class="phwrap" data-f data-act="zoom" data-arg="${id}"><img class="ph" src="${asset(ph.thumb)}" alt="${esc(ph.caption)}"${style ? ` style="${style}"` : ''}>` +
+  return `<div class="phwrap" data-f data-act="zoom" data-arg="${id}"><img class="ph" src="${asset(ph.headshot || ph.thumb)}" alt="${esc(ph.caption)}"${style ? ` style="${style}"` : ''}>` +
     `<div class="cap"><span>${esc(ph.caption)}</span><span>A: ZOOM</span></div></div>`;
 }
 
@@ -295,11 +295,11 @@ const VIEWS = {
   about: () => ({
     title: 'ABOUT',
     text: true,
-    html: photoBlock('me', 'object-position:50% 54%;height:110px') +
+    html: photoBlock('me', 'object-position:50% 38%;height:112px') +
       `<div class="h">${esc(P.name.toUpperCase())}</div><p class="k">${esc(P.headline)}</p>${paras([P.bio])}` +
       `<div class="grp">Say hi</div>` +
       `<div class="row" data-f data-href="mailto:${P.links.email}"><span class="ic">@</span><span class="tx">EMAIL<small>${esc(P.links.email)}</small></span><span class="go">&gt;</span></div>` +
-      `<div class="row" data-f data-href="${P.links.linkedin}"><span class="ic">in</span><span class="tx">LINKEDIN<small>/in/omar-ozalp</small></span><span class="go">&gt;</span></div>` +
+      `<div class="row" data-f data-href="${P.links.linkedin}"><span class="ic">in</span><span class="tx">LINKEDIN<small>/in/omarozalp</small></span><span class="go">&gt;</span></div>` +
       `<div class="row" data-f data-href="${P.links.github}"><span class="ic">&lt;/&gt;</span><span class="tx">GITHUB<small>@omarozalp</small></span><span class="go">&gt;</span></div>`
   }),
 

@@ -364,7 +364,7 @@ async function start3D() {
     const ph = def.photo && photoById(def.photo);
     photoBtn.hidden = !ph;
     if (ph) {
-      photoBtn.querySelector('img').src = ph.thumb;
+      photoBtn.querySelector('img').src = ph.headshot || ph.thumb;
       photoBtn.querySelector('img').alt = ph.caption;
       photoBtn.querySelector('.card-photo-cap').textContent = ph.caption;
       photoBtn.onclick = () => viewPhoto(ph.id);

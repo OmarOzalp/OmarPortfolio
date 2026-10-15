@@ -42,7 +42,7 @@ var Terminal = (function() {
 
   var LINKS = {
     github:   'https://github.com/omarozalp',
-    linkedin: 'https://www.linkedin.com/in/omar-ozalp',
+    linkedin: 'https://www.linkedin.com/in/omarozalp',
     scubago:  'https://github.com/OmarOzalp/scubago',
     email:    'mailto:omar_ozalp@duke.edu'
   };
