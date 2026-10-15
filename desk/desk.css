@@ -98,7 +98,7 @@ body[data-mode="screen"] .vignette { opacity: 0; }
 #brand span { display: block; font-weight: 400; font-size: 12px; color: var(--ink-dim); margin-top: 2px; }
 body[data-mode="screen"] #brand { display: none; }
 
-#back, #plain-link, #mute {
+#back, #plain-link, #mute, #boy-link {
   font: 600 13px var(--ui);
   color: var(--ink);
   background: rgba(16, 18, 26, 0.62);
@@ -111,7 +111,7 @@ body[data-mode="screen"] #brand { display: none; }
   -webkit-backdrop-filter: blur(8px);
   transition: background 0.2s, opacity 0.4s;
 }
-#back:hover, #plain-link:hover, #mute:hover { background: rgba(40, 44, 60, 0.85); }
+#back:hover, #plain-link:hover, #mute:hover, #boy-link:hover { background: rgba(40, 44, 60, 0.85); }
 #back:focus-visible, #plain-link:focus-visible, #mute:focus-visible { outline: 2px solid #6fd0ff; outline-offset: 2px; }
 #back kbd {
   font: 11px var(--ui);
@@ -315,6 +315,14 @@ body[data-mode="screen"] #tooltip { display: none; }
 .card-btn:focus-visible { outline: 2px solid #6fd0ff; outline-offset: 2px; }
 
 /* === Flat mode (phones / no WebGL): the OS fills the screen === */
+/* back to the handheld: only on phones and tablets, where the brand makes room for it */
+#boy-link { display: none; text-decoration: none; }
+.phone #boy-link { display: inline-flex; align-items: center; }
+.phone #brand { display: none; }
+#boy-link.floating { position: fixed; z-index: 20; right: 8px; bottom: 52px; }
+.ld-boy { display: none; margin-top: 18px; color: #9fd8ff; font: 600 14px var(--ui); }
+.phone .ld-boy { display: inline-block; }
+
 body.flat #stage, body.flat #hud, body.flat .vignette, body.flat #hint, body.flat #card, body.flat #prop-nav, body.flat #tooltip { display: none; }
 #os-flat { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; background: #000; }
 

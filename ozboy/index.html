@@ -37,7 +37,7 @@
           <div class="guts" aria-hidden="true"></div>
           <div class="plastic" aria-hidden="true"></div>
           <i class="spark" aria-hidden="true"></i>
-          <div class="switch" aria-hidden="true"><i></i><span>OFF &bull; ON</span></div>
+          <button class="switch" aria-label="Power switch"><i></i><span>OFF &bull; ON</span></button>
           <div class="bezel">
             <div class="lbl" aria-hidden="true"><i></i>OZ-MATRIX &middot; STEREO SOUND<i></i></div>
             <div class="led" aria-hidden="true"></div><span class="ledlbl" aria-hidden="true">POWER</span>
@@ -49,13 +49,14 @@
           <div class="logo" aria-hidden="true">OZ BOY <em><b>C</b><b>O</b><b>L</b><b>O</b><b>R</b></em></div>
           <div class="ctl">
             <div class="dpad" data-btn="dpad" aria-label="D-pad"><i></i><i></i><b></b><u></u><u></u><u></u><u></u></div>
+            <span class="cap dcap" data-cap="dpad"></span>
             <div class="ab">
-              <button class="btn b" data-btn="b" aria-label="B, back"><span>B</span></button>
-              <button class="btn a" data-btn="a" aria-label="A, open"><span>A</span></button>
+              <button class="btn b" data-btn="b" aria-label="B"><span>B<em data-cap="b"></em></span></button>
+              <button class="btn a" data-btn="a" aria-label="A"><span>A<em data-cap="a"></em></span></button>
             </div>
             <div class="ss">
-              <button data-btn="select" aria-label="Select, options"><span>SELECT</span></button>
-              <button data-btn="start" aria-label="Start, home"><span>START</span></button>
+              <button data-btn="select" aria-label="Select, menu"><span>SELECT<em data-cap="select"></em></span></button>
+              <button data-btn="start" aria-label="Start, home"><span>START<em data-cap="start"></em></span></button>
             </div>
             <div class="grill" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
           </div>
@@ -74,6 +75,9 @@
     </nav>
     <p class="foot"><a href="../plain.html">Plain version</a> &middot; <a href="../?desk">Desk version</a> <span>(best on a laptop)</span></p>
   </main>
+
+  <div id="tip" role="status" hidden></div>
+  <div id="coach" hidden></div>
 
   <div id="photo-view" hidden><img alt=""><p></p><button class="chip" aria-label="Close photo">&times; Close</button></div>
 

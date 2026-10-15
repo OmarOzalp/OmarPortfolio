@@ -123,6 +123,17 @@ ozboy/games/*.js    town (Beach Walk), fish (Fish On!), snake (Sea Snake); contr
   buildings call `host.open(section)`.
 - Sounds are square-wave additions to `os/sound.js` and share the desk's mute setting.
 
+### Update — OZ BOY usability pass
+
+- Yellow captions under A, B, Start, Select and the D-pad say what each does on the current screen (OPEN/BACK,
+  LEFT LEG/RIGHT LEG in the dash, PLAY/PICK in the cartridge picker…). B on the home screen no longer puts it down.
+- First boot shows "How to play": numbered rings around the controls and a card over the screen (again via Select).
+- The power switch works: off drops what was running (the cartridge stays in), on boots again, straight into the
+  inserted game like the real thing. Pressing buttons while it is off points at the switch.
+- New cartridge: 100M DASH. A is the left leg, B the right; alternate to sprint, the same leg twice is a stumble,
+  pressing before the gun is a false start. Two rivals and a best time.
+- Phones that open the desk get "← OZ BOY" in its top bar and loading screen (and over the OS in flat mode).
+
 ## Pending content from Omar
 
 The resume PDF (`RESUME_PDF` in `os/apps.js` and `plain.html`), sketchbook scans, a higher-detail drill if wanted, and real details for some captions (track events/PRs, things built with the

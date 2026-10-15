@@ -39,6 +39,12 @@ function startFlat() {
   f.title = 'OzalpOS 98 - Omar Ozalp\'s computer';
   document.body.appendChild(f);
   $('loader').remove();
+  // The HUD is hidden here, so the way back to the handheld floats above the OS's taskbar.
+  if (document.documentElement.classList.contains('phone')) {
+    const b = $('boy-link');
+    b.classList.add('floating');
+    document.body.appendChild(b);
+  }
 }
 
 /* ---------------- the desk ---------------- */

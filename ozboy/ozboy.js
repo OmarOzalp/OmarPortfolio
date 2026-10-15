@@ -116,6 +116,8 @@ function putDown() {
   held = false;
   finishSwap();
   closeModal();
+  closeCoach();
+  hideTip();
   pauseView();
   release();
   body.classList.remove('held');
@@ -123,26 +125,64 @@ function putDown() {
   setTimeout(() => sound.play('putdown'), reduceMotion ? 0 : 430);
 }
 
-function powerOn(then) {
+// manual: flipped on with the power switch, so always show the boot animation.
+function powerOn(then, manual) {
   on = true;
-  boy.classList.add('on');
+  setPower(true);
   sound.play('toggle');
-  screenEl.classList.remove('off');
   let seen = false;
   try { seen = sessionStorage.getItem('ozboy.booted') === '1'; } catch (e) {}
-  if (then || seen || reduceMotion) {
+  if (!manual && (then || seen || reduceMotion)) {
     setTimeout(() => sound.play('bootding'), 120);
-    stack.length = 0;
-    stack.push({ id: 'home' });
-    render();
+    startAtHome();
     if (then) then();
     return;
   }
   boot();
 }
 
+// After booting: the home screen, or straight into the game whose cartridge is in the slot (like the real thing).
+function startAtHome() {
+  stack.length = 0;
+  stack.push({ id: 'home' });
+  if (cartIn) {
+    stack.push({ id: 'games' }, { id: 'game', arg: cartIn });
+    history.pushState({ oz: 2 }, '');
+    history.pushState({ oz: 3 }, '');
+  }
+  render();
+  maybeCoach();
+}
+
+// The power switch: off drops whatever was running (the cartridge stays in), on boots it again.
+let skipPops = 0;
+function powerOff() {
+  if (!on || swapping) return;
+  closeModal();
+  closeCoach();
+  release();
+  if (booting) { clearTimeout(booting.ding); clearTimeout(booting.done); booting = null; body.classList.remove('booting'); }
+  leaveView();
+  on = false;
+  setPower(false);
+  setCaps({});
+  sound.play('powerdown');
+  // Collapse the history entries for the screens that just went away, so Back still means "put it down".
+  const depth = (history.state && history.state.oz) || 0;
+  stack.length = 0;
+  if (depth > 1) { skipPops++; history.go(-(depth - 1)); }
+}
+
+function togglePower() {
+  if (swapping) return;
+  hideTip();
+  if (on) powerOff();
+  else powerOn(null, true);
+}
+
 function boot() {
   body.classList.add('booting');
+  setCaps({});
   lcd.classList.add('full');
   viewEl.innerHTML = '<div class="boot"><div class="mark">OZ BOY<small>COLOR</small></div><div class="by">Omar Ozalp &middot; 1998</div></div>';
   setTitle('');
@@ -158,9 +198,7 @@ function finishBoot() {
   booting = null;
   body.classList.remove('booting');
   try { sessionStorage.setItem('ozboy.booted', '1'); } catch (e) {}
-  stack.length = 0;
-  stack.push({ id: 'home' });
-  render();
+  startAtHome();
 }
 
 /* ---------------- the screen ---------------- */
@@ -172,6 +210,13 @@ lcd.innerHTML = `
 const viewEl = $('.view', lcd), hintsEl = $('.hints', lcd), sbar = $('.sbar i', lcd);
 
 function setTitle(t) { $('.ttl', lcd).textContent = t; }
+
+// What each button does right now, printed in yellow under it.
+const DEFAULT_CAPS = { a: 'OPEN', b: 'BACK', start: 'HOME', select: 'MENU', dpad: 'MOVE' };
+function setCaps(c) {
+  ['a', 'b', 'start', 'select', 'dpad'].forEach((k) => { boy.querySelector(`[data-cap="${k}"]`).textContent = (c && c[k]) || ''; });
+}
+function refreshCaps() { setCaps(cur ? cur.caps : {}); }
 function setHints(h) { hintsEl.innerHTML = h.map(([k, v]) => `<span><b>${k}</b>${v}</span>`).join(''); }
 function syncNote() { $('.note', lcd).classList.toggle('off', sound.isMuted()); }
 
@@ -201,7 +246,7 @@ const LIFE = {
     extra: [['SCUBAGO PROJECT', 'data-go="code"'], ['GO FISHING', 'data-go="game" data-arg="fish"', true]] },
   mat: { prop: 'headgear', kicker: 'Wrestling', title: 'MAT', photo: 'wrestling', extra: [] },
   track: { prop: 'spikes', kicker: 'Track & field', title: 'TRACK', art: 'track',
-    extra: [['RUN THE BEACH', 'data-go="game" data-arg="town"', true]] },
+    extra: [['RUN THE 100M', 'data-go="game" data-arg="dash"'], ['WALK THE BEACH', 'data-go="game" data-arg="town"', true]] },
   shop: { prop: 'drill', kicker: 'Building things', title: 'SHOP', photo: 'workshop',
     extra: [['MORE PICS', 'data-go="pics" data-arg="workshop"', true]] }
 };
@@ -210,8 +255,16 @@ const LIFE = {
 const GAMES = [
   { id: 'town', name: 'BEACH WALK', sub: 'Explore my life on foot', color: '#ff6f59' },
   { id: 'fish', name: 'FISH ON!', sub: 'Land a yellowtail like I did', color: '#1a6fc0' },
+  { id: 'dash', name: '100M DASH', sub: 'A and B are your legs. Sprint!', color: '#c94a3a' },
   { id: 'snake', name: 'SEA SNAKE', sub: 'Snake, but underwater', color: '#0e8a9a' }
 ];
+// What A/B/Start/Select do inside each game.
+const GAME_CAPS = {
+  town: { a: 'TALK', b: 'BACK', start: 'PAUSE', select: '' },
+  fish: { a: 'CAST/REEL', b: 'BACK', start: 'PAUSE', select: 'FISH LOG' },
+  dash: { a: 'LEFT LEG', b: 'RIGHT LEG', start: 'PAUSE', select: '', dpad: '' },
+  snake: { a: 'START', b: 'PAUSE', start: 'PAUSE', select: '', dpad: 'STEER' }
+};
 let pickIdx = 0;
 
 // Cartridge label art, 55 x 39 pixels, shown at 2x on the cartridges.
@@ -248,6 +301,24 @@ const CART_ART = {
     rect(ctx, '#ffd23f', 20, 7, 3, 2); rect(ctx, '#ffd23f', 20, 13, 3, 2); rect(ctx, '#ffd23f', 22, 9, 2, 4);
     [[18, 18], [20, 16], [23, 19], [39, 17], [41, 15], [43, 18]].forEach(([x, y]) => rect(ctx, '#ffffff', x, y, 1, 1));
   },
+  dash(ctx) {
+    rect(ctx, '#bfe8ff', 0, 0, 55, 6);
+    rect(ctx, '#7a8091', 0, 6, 55, 8);
+    for (let x = 1; x < 55; x += 4) { rect(ctx, ['#ffd23f', '#ffffff', '#ff5a5f', '#2a5bd7'][x % 4], x, 8 + (x % 3), 2, 2); }
+    rect(ctx, '#012169', 0, 14, 55, 2);
+    rect(ctx, '#c94a3a', 0, 16, 55, 23);
+    for (let y = 16; y < 39; y += 7) rect(ctx, '#ffffff', 0, y, 55, 1);
+    for (let y = 16; y < 39; y += 2) { rect(ctx, '#ffffff', 46, y, 2, 1); rect(ctx, '#14213d', 48, y + 1, 2, 1); }
+    rect(ctx, '#ffd23f', 45, 12, 1, 14);
+    // the runner, mid-stride
+    rect(ctx, '#2b1a12', 22, 17, 4, 2); rect(ctx, '#c98a5a', 22, 19, 4, 3);
+    rect(ctx, '#012169', 21, 22, 6, 6); rect(ctx, '#ffffff', 21, 28, 6, 2);
+    rect(ctx, '#c98a5a', 27, 23, 4, 1); rect(ctx, '#c98a5a', 17, 24, 4, 1);
+    rect(ctx, '#c98a5a', 26, 30, 2, 3); rect(ctx, '#c98a5a', 28, 32, 3, 2);
+    rect(ctx, '#c98a5a', 20, 30, 2, 2); rect(ctx, '#c98a5a', 17, 31, 3, 2);
+    rect(ctx, '#ffffff', 31, 33, 3, 1); rect(ctx, '#ffffff', 15, 32, 3, 1);
+    [[10, 22], [8, 26], [11, 30]].forEach(([x, y]) => rect(ctx, '#ffffff', x, y, 4, 1));
+  },
   snake(ctx) {
     rect(ctx, '#1a8fd0', 0, 0, 55, 13); rect(ctx, '#0b4f8f', 0, 13, 55, 13); rect(ctx, '#063258', 0, 26, 55, 13);
     for (let x = 6; x < 55; x += 14) rect(ctx, 'rgba(255,255,255,.12)', x, 0, 4, 26);
@@ -279,7 +350,7 @@ function photoBlock(id, style) {
 const VIEWS = {
   home: () => ({
     title: 'OMAR OZALP',
-    hints: [['A', 'OPEN'], ['B', 'PUT DOWN']],
+    hints: [['+', 'MOVE'], ['A', 'OPEN']],
     html: (() => {
       let h = '', grid = [];
       const flush = () => { if (grid.length) h += `<div class="grid">${grid.join('')}</div>`; grid = []; };
@@ -367,6 +438,7 @@ const VIEWS = {
     return {
       title: 'PICS',
       hints: [['&lt;&gt;', 'MORE'], ['A', 'ZOOM']],
+      caps: { a: 'ZOOM', dpad: '< MORE >' },
       fixed: true,
       html: `<div class="album"><img class="ph" data-f data-act="zoomcur" alt=""><div class="meta"><p></p><div class="arrows"><span data-act="prev">&lt;</span><span class="n"></span><span data-act="next">&gt;</span></div></div></div>`,
       enter: () => show(0),
@@ -405,6 +477,7 @@ const VIEWS = {
     return {
       title: 'GAMES',
       hints: [['&lt;&gt;', 'PICK'], ['A', 'PLAY']],
+      caps: { a: 'PLAY', dpad: '< PICK >' },
       fixed: true,
       html: `<div class="picker"><div class="rowc"><span class="arw" data-act="prev">&lt;</span>` +
         `<div class="ccart" data-f data-act="insert" style="width:${w}px;height:${h}px"><i class="grip"></i><div class="label"><b></b><span></span></div></div>` +
@@ -489,6 +562,7 @@ function replay(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.cla
 // its label catches the light, then is pushed into the slot (clunk, jolt, flash) and the power comes on.
 function swapCart(want, restore) {
   leaveView();
+  setCaps({});
   const token = swapping = {};
   const at = (ms, fn) => setTimeout(() => { if (swapping === token) fn(); }, reduceMotion ? 0 : ms);
   setPower(false);
@@ -537,6 +611,8 @@ function draw(restore) {
   lcd.classList.toggle('full', !!def.full);
   setTitle(def.title || '');
   setHints(def.hints || [['A', 'OPEN'], ['B', 'BACK']]);
+  cur.caps = Object.assign({}, DEFAULT_CAPS, stack.length <= 1 ? { b: '', start: '' } : {}, def.caps || {});
+  setCaps(cur.caps);
   viewEl.scrollTop = 0;
   viewEl.style.overflowY = def.fixed ? 'hidden' : '';
   if (def.mount) def.mount(viewEl);
@@ -596,6 +672,7 @@ function popTo(depth) {
 }
 
 addEventListener('popstate', (e) => {
+  if (skipPops) { skipPops--; return; }
   const depth = (e.state && e.state.oz) || 0;
   if (!held) return;
   if (booting && depth > 0) return;
@@ -734,8 +811,10 @@ function openOptions() {
   if (modal) { closeModal(); return; }
   const opts = [
     ['sound', () => (sound.isMuted() ? 'SOUND: OFF' : 'SOUND: ON'), () => { sound.toggle(); syncMute(); paint(); }],
+    ['help', () => 'HOW TO PLAY', () => { closeModal(); openCoach(); }],
     ['home', () => 'HOME', () => { closeModal(); goHome(); }],
     ['down', () => 'PUT DOWN', () => { closeModal(); leaveHand(); }],
+    ['off', () => 'TURN OFF', () => { closeModal(); powerOff(); }],
     ['desk', () => 'DESK VERSION', () => { location.href = '../?desk'; }],
     ['plain', () => 'PLAIN PAGE', () => { location.href = '../plain.html'; }]
   ];
@@ -757,6 +836,7 @@ function openOptions() {
   });
   sound.play('select');
   pauseView();
+  setCaps({ a: 'PICK', b: 'CLOSE', select: 'CLOSE', dpad: 'UP/DOWN' });
   modal = {
     el,
     button(b, down) {
@@ -770,6 +850,7 @@ function closeModal() {
   if (!modal) return;
   modal.el.remove();
   modal = null;
+  refreshCaps();
   resumeView();
 }
 
@@ -818,7 +899,7 @@ function gameView(name) {
         exit: () => { if (alive) goBack(); },
         open: (id) => {
           if (!alive) return;
-          if (id === 'snake' || id === 'fish' || id === 'town') go('game', id);
+          if (GAMES.some((g) => g.id === id)) go('game', id);
           else go(id, id === 'pics' && name === 'fish' ? 'yellowtail' : null);   // the catch card's "SEE IT"
         },
         asset
@@ -849,6 +930,7 @@ function gameView(name) {
         el.innerHTML = '<div class="boot"><div class="mark" style="animation:none;top:40%">OOPS</div><div class="by" style="opacity:1">This cartridge is still being built.</div></div>';
       });
     },
+    caps: Object.assign({ dpad: 'MOVE', select: '' }, GAME_CAPS[name]),
     leave() { alive = false; if (game) game.stop(); },
     pause() { if (game) game.pause(); },
     resume() { if (game) game.resume(); },
@@ -870,6 +952,8 @@ function press(b) {
   visual(b, true);
   buzz();
   if (!held) return;
+  if (!coachEl.hidden) { closeCoach(); return; }
+  if (!on) { nudgePower(); return; }
   if (!photoView.hidden) { if (b === 'b' || b === 'a') closePhoto(); return; }
   if (booting) { finishBoot(); return; }
   if (swapping || !cur) return;
@@ -882,7 +966,7 @@ function press(b) {
     const again = () => { if (pressed.has(b) && cur && !modal) { move(b); repeatTimer = setTimeout(again, 110); } };
     repeatTimer = setTimeout(again, 380);
   } else if (b === 'a') aArmed = true;
-  else if (b === 'b') goBack();
+  else if (b === 'b') { if (stack.length <= 1 && !modal) sound.play('bump'); else goBack(); }
   else if (b === 'start') goHome();
   else if (b === 'select') openOptions();
 }
@@ -978,6 +1062,85 @@ viewEl.addEventListener('click', (e) => {
   activate(el);
 });
 lcd.addEventListener('click', () => { if (booting) finishBoot(); });
+screenEl.addEventListener('click', () => { if (held && !on) nudgePower(); });
+
+// The power switch on top. Lying on the towel, tapping anywhere (the switch too) picks it up.
+$('.switch', boy).addEventListener('click', (e) => {
+  if (!held) return;
+  e.stopPropagation();
+  togglePower();
+});
+
+/* ---------------- tips and "how to play" ---------------- */
+const tipEl = $('#tip');
+let tipTimer = 0;
+function showTip(text, near, ms = 2800) {
+  const r = near.getBoundingClientRect();
+  tipEl.textContent = text;
+  tipEl.hidden = false;
+  const x = Math.max(8, Math.min(innerWidth - tipEl.offsetWidth - 8, r.left + r.width / 2 - 28));
+  tipEl.style.left = x + 'px';
+  tipEl.style.top = r.bottom + 12 + 'px';
+  tipEl.style.setProperty('--ax', Math.max(10, r.left + r.width / 2 - x - 7) + 'px');
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(hideTip, ms);
+}
+function hideTip() { tipEl.hidden = true; }
+function nudgePower() {
+  const sw = $('.switch', boy);
+  replay(sw, 'nudge');
+  sound.play('bump');
+  showTip("It's off. Flip the power switch up here to turn it on.", sw);
+}
+
+// "How to play": numbered rings around the controls and one card over the screen saying what each does.
+// Shown once, after the first boot; Select > HOW TO PLAY shows it again.
+const coachEl = $('#coach');
+const COACH = [
+  ['#screen', 'Tap the screen', 'Tap anything on it. Swipe to scroll.', true],
+  ['.dpad', 'D-pad', 'Move around and pick things.'],
+  ['.btn.a', 'A', 'Open / OK.'],
+  ['.btn.b', 'B', 'Go back.'],
+  ['.ss', 'Start / Select', 'Home / the menu.', true],
+  ['.switch', 'Power switch', 'Turn it off and on.', true]
+];
+function openCoach() {
+  if (!held) return;
+  release();
+  coachEl.innerHTML = '';
+  COACH.forEach(([sel, , , square], i) => {
+    const r = $(sel, sel === '#screen' ? document : boy).getBoundingClientRect(), pad = square ? 5 : 9;
+    const ring = document.createElement('div');
+    ring.className = 'ring' + (square ? ' sq' : '');
+    Object.assign(ring.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+    const n = document.createElement('b');
+    n.className = 'num';
+    n.textContent = i + 1;
+    Object.assign(n.style, { left: Math.min(innerWidth - 26, r.right + pad - 12) + 'px', top: Math.max(4, r.top - pad - 10) + 'px' });
+    coachEl.append(ring, n);
+  });
+  const sr = $('#screen').getBoundingClientRect();
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = '<h2>How to play</h2><ol>' + COACH.map(([, t, d]) => `<li><b>${t}</b> ${d}</li>`).join('') + '</ol>' +
+    '<p>The yellow words under the buttons always say what they do right now.</p><button class="ok">Got it!</button>';
+  Object.assign(card.style, { left: Math.max(8, sr.left - 6) + 'px', width: Math.min(innerWidth - 16, sr.width + 12) + 'px', top: Math.max(8, sr.top - 6) + 'px', maxHeight: innerHeight - Math.max(8, sr.top - 6) - 12 + 'px' });
+  coachEl.append(card);
+  coachEl.hidden = false;
+  sound.play('select');
+}
+function closeCoach() {
+  if (coachEl.hidden) return;
+  coachEl.hidden = true;
+  try { localStorage.setItem('ozboy.coached', '1'); } catch (e) {}
+  sound.play('blip');
+}
+coachEl.addEventListener('click', closeCoach);
+function maybeCoach() {
+  let seen = false;
+  try { seen = localStorage.getItem('ozboy.coached') === '1'; } catch (e) {}
+  if (!seen && !reduceMotion) setTimeout(() => { if (held && on && !swapping && coachEl.hidden) openCoach(); }, 600);
+}
 
 // Horizontal swipes on the screen (the photo album uses them).
 let sw = null;
@@ -991,6 +1154,7 @@ viewEl.addEventListener('pointerup', (e) => {
 
 /* ---------------- the rest of the page ---------------- */
 holder.addEventListener('click', () => { if (!held) pickUp(); });
+addEventListener('resize', () => { if (!coachEl.hidden) closeCoach(); hideTip(); });
 $('#putdown').addEventListener('click', leaveHand);
 document.querySelectorAll('.pills [data-go]').forEach((b) => {
   b.addEventListener('click', () => {
