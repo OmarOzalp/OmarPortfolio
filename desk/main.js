@@ -39,6 +39,12 @@ function startFlat() {
   f.title = 'OzalpOS 98 - Omar Ozalp\'s computer';
   document.body.appendChild(f);
   $('loader').remove();
+  // The HUD is hidden here, so the way back to the handheld floats above the OS's taskbar.
+  if (document.documentElement.classList.contains('phone')) {
+    const b = $('boy-link');
+    b.classList.add('floating');
+    document.body.appendChild(b);
+  }
 }
 
 /* ---------------- the desk ---------------- */
@@ -364,7 +370,7 @@ async function start3D() {
     const ph = def.photo && photoById(def.photo);
     photoBtn.hidden = !ph;
     if (ph) {
-      photoBtn.querySelector('img').src = ph.thumb;
+      photoBtn.querySelector('img').src = ph.headshot || ph.thumb;
       photoBtn.querySelector('img').alt = ph.caption;
       photoBtn.querySelector('.card-photo-cap').textContent = ph.caption;
       photoBtn.onclick = () => viewPhoto(ph.id);

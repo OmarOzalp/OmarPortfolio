@@ -191,6 +191,10 @@ OS.sound = (function() {
       sq(2093, t + 0.1, 1.1, 0.045);
       tone(2093, t + 0.1, 1.3, { gain: 0.05 });
     },
+    powerdown: function(t) {
+      noise(t, 0.015, { freq: 4200, q: 3, gain: 0.3 });
+      sq(784, t + 0.02, 0.06, 0.04); sq(523, t + 0.09, 0.06, 0.04); sq(262, t + 0.16, 0.18, 0.04);
+    },
     lift: function(t) { noise(t, 0.18, { freq: 700, freqTo: 1600, q: 0.7, gain: 0.08 }); },
     putdown: function(t) { noise(t, 0.04, { freq: 600, q: 1, gain: 0.3 }); tone(160, t, 0.08, { gain: 0.05 }); },
     step: function(t) { noise(t, 0.02, { freq: 1300, q: 2, gain: 0.07 }); },

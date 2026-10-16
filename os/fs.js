@@ -41,7 +41,7 @@ var VFS = (function() {
       'or building something with a power drill I probably shouldn\'t own.',
     links: {
       github: 'https://github.com/omarozalp',
-      linkedin: 'https://www.linkedin.com/in/omar-ozalp',
+      linkedin: 'https://www.linkedin.com/in/omarozalp',
       email: 'omar_ozalp@duke.edu'
     },
     experience: [
@@ -98,7 +98,7 @@ var VFS = (function() {
         'interests.txt': INTERESTS_TXT,
         'contact.txt': [
           'github:   https://github.com/omarozalp',
-          'linkedin: https://www.linkedin.com/in/omar-ozalp',
+          'linkedin: https://www.linkedin.com/in/omarozalp',
           'email:    omar_ozalp@duke.edu'
         ].join('\n'),
         'resume.doc': '#!app:resume',
@@ -147,12 +147,14 @@ var VFS = (function() {
     { id: 'yellowtail', file: 'yellowtail.jpg', caption: 'Yellowtail, landed', w: 4, h: 3 },
     { id: 'wrestling', file: 'wrestling.jpg', caption: 'When the whole team rushes the mat', w: 3, h: 2 },
     { id: 'workshop', file: 'workshop.jpg', caption: 'Giant letters. One saw. All fingers intact.', w: 9, h: 16 },
-    { id: 'me', file: 'duke_chapel.jpg', caption: 'Suited up at Duke Chapel', w: 2, h: 3 }
+    // headshot: a square crop centered on Omar's face, for avatars and anywhere the portrait is shown cropped.
+    { id: 'me', file: 'duke_chapel.jpg', caption: 'Suited up at Duke Chapel', w: 2, h: 3, headshot: 'assets/photos/headshot.jpg' }
   ];
   PHOTOS.forEach(function(p) {
     p.src = 'assets/photos/' + p.id + '.jpg';
     p.thumb = 'assets/photos/thumbs/' + p.id + '.jpg';
   });
+
 
   // Project metadata used by the Projects app, Explorer and the desk's floppy disks.
   var PROJECTS = [

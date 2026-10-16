@@ -12,6 +12,8 @@
     if (!/[?&](desk|flat)(=|&|$)/.test(location.search) && (innerWidth < 760 || innerHeight < 420)) {
       location.replace('ozboy/' + location.hash);
     }
+    // Phones and tablets that opened the desk anyway get a way back to the handheld.
+    if (matchMedia('(pointer: coarse)').matches || innerWidth < 760) document.documentElement.classList.add('phone');
   </script>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 32 32%22%3E%3Crect x=%222%22 y=%222%22 width=%2228%22 height=%2222%22 rx=%223%22 fill=%22%23d9d3c0%22/%3E%3Crect x=%225%22 y=%225%22 width=%2222%22 height=%2216%22 fill=%22%23008080%22/%3E%3Crect x=%2210%22 y=%2226%22 width=%2212%22 height=%224%22 fill=%22%23c4bda6%22/%3E%3C/svg%3E">
   <link rel="stylesheet" href="desk/desk.css">
@@ -31,6 +33,7 @@
       <div class="ld-title">OZ-PC 98</div>
       <div class="ld-bar"><i></i></div>
       <p>Warming up the CRT&hellip;</p>
+      <a class="ld-boy" href="ozboy/">&larr; Back to OZ BOY</a>
     </div>
   </div>
 
@@ -42,6 +45,7 @@
 
   <header id="hud">
     <div class="hud-left">
+      <a id="boy-link" href="ozboy/">&larr; OZ BOY</a>
       <button id="back" hidden>&larr; Back to desk <kbd>Esc</kbd></button>
       <div id="brand">Omar Ozalp<span>ECE &middot; CS &middot; Math @ Duke</span></div>
     </div>
