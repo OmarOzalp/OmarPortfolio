@@ -25,7 +25,7 @@ export default function create(host) {
 
   let raf = 0, last = 0, paused = false, running = false;
   let phase = 'title';           // title | marks | race | done
-  let t = 0, clock = 0, cue = 0, goAt = 9, cueText = '', falseStarts = 0;
+  let t = 0, clock = 0, cue = 0, goAt = 9, cueText = '', falseStarts = 0, doneAt = 0;
   let best = host.store.get('best');
   let me, cpu, place = 0, newBest = false, quip = '';
   let lastLeg = null, stumble = 0, banner = '', bannerT = 0;
@@ -112,9 +112,14 @@ export default function create(host) {
     host.sfx(place === 1 ? 'win' : 'select');
   }
 
+  // The results screen ignores input for a moment, so mashing A/B across the line doesn't restart the race.
+  // Timed with `t`, which keeps running; the race clock stops when the race ends.
+  const resultsReady = () => t - doneAt >= 0.8;
+
   function end() {
     if (phase === 'done') return;
     phase = 'done';
+    doneAt = t;
     place = 1 + cpu.filter((r) => (r.done || 99) < me.done).length;
     newBest = !best || me.done < best;
     if (newBest) { best = Math.round(me.done * 100) / 100; host.store.set('best', best); }
@@ -299,7 +304,7 @@ export default function create(host) {
         return true;
       }
       if (phase === 'done') {
-        if (clock - me.done < 0.8) return true;
+        if (!resultsReady()) return true;
         if (b === 'a' || b === 'start') { host.sfx('select'); marks(); }
         else if (b === 'b') host.exit();
         return true;
@@ -315,7 +320,7 @@ export default function create(host) {
     },
     tap() {
       if (phase === 'title') { host.sfx('select'); marks(); }
-      else if (phase === 'done' && clock - me.done >= 0.8) { host.sfx('select'); marks(); }
+      else if (phase === 'done' && resultsReady()) { host.sfx('select'); marks(); }
       else if (paused) paused = false;
     },
     swipe() {},
